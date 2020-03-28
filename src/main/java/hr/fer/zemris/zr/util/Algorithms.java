@@ -168,6 +168,29 @@ public class Algorithms {
     }
 
     /**
+     * Creates a {@link BufferedImage} from the given {@code data} array.
+     *
+     * @param data array containing pixel data.
+     * @param width of the image.
+     * @param height of the image.
+     * @param colorType defines {@code imageType} of created {@link BufferedImage}.
+     *
+     * @return a new {@link BufferedImage} whose pixels are calculated from {@code data}.
+     */
+    public static BufferedImage convertToImage(float[] data, int width, int height, int colorType) {
+        BufferedImage img = new BufferedImage(width, height, colorType);
+        byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+
+        int offset = 0;
+
+        for (float color : data) {
+            pixels[offset++] = (byte) (Math.round(Math.abs(color) * 255) & 0xFF);
+        }
+
+        return img;
+    }
+
+    /**
      * Used in methods that use multithreading. Causes main thread
      * to {@link Thread#join()} all threads in {@code threads}.
      *
