@@ -180,7 +180,7 @@ public class Algorithms {
             throw new RuntimeException("Both arrays must be of same length.");
         }
 
-        int length = gx.length;
+        final int length = gx.length;
         float[] magnitude = new float[length];
 
         for (int i = 0; i < length; i++) {
@@ -188,6 +188,32 @@ public class Algorithms {
             float y = gy[i];
 
             magnitude[i] = (float) Math.sqrt(x * x + y * y);
+        }
+
+        return magnitude;
+    }
+
+    /**
+     * Calculates the angle using given x and y derivatives.
+     *
+     * @param gx array containing x derivative.
+     * @param gy array containing y derivative.
+     *
+     * @return an array containing calculated angle.
+     */
+    public static float[] calculateAngle(float[] gx, float[] gy) {
+        if (gx.length != gy.length) {
+            throw new RuntimeException("Both arrays must be of same length.");
+        }
+
+        final int length = gx.length;
+        float[] magnitude = new float[length];
+
+        for (int i = 0; i < length; i++) {
+            float x = gx[i];
+            float y = gy[i];
+
+            magnitude[i] = (float) Math.toDegrees(Math.atan2(y, x) % Math.PI);
         }
 
         return magnitude;
