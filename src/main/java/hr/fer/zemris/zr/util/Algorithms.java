@@ -168,6 +168,32 @@ public class Algorithms {
     }
 
     /**
+     * Calculates the magnitude using given x and y derivatives.
+     *
+     * @param gx array containing x derivative.
+     * @param gy array containing y derivative.
+     *
+     * @return an array containing calculated magnitude.
+     */
+    public static float[] calculateMagnitude(float[] gx, float[] gy) {
+        if (gx.length != gy.length) {
+            throw new RuntimeException("Both arrays must be of same length.");
+        }
+
+        int length = gx.length;
+        float[] magnitude = new float[length];
+
+        for (int i = 0; i < length; i++) {
+            float x = gx[i];
+            float y = gy[i];
+
+            magnitude[i] = (float) Math.sqrt(x * x + y * y);
+        }
+
+        return magnitude;
+    }
+
+    /**
      * Creates a {@link BufferedImage} from the given {@code data} array.
      *
      * @param data array containing pixel data.
