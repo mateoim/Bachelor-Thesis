@@ -213,7 +213,11 @@ public class Algorithms {
             float x = gx[i];
             float y = gy[i];
 
-            magnitude[i] = (float) Math.toDegrees(Math.atan2(y, x) % Math.PI);
+            float value = (float) Math.toDegrees(Math.atan2(y, x) % Math.PI);
+
+            value += value < 0 ? 180 : 0;
+
+            magnitude[i] = value;
         }
 
         return magnitude;
