@@ -186,8 +186,8 @@ public class HOGImage {
                 final int index = (int) (angle / BIN_WIDTH);
                 final float factor = (angle - (BIN_WIDTH * index)) / BIN_WIDTH;
 
-                histogram[index] = (1 - factor) * magnitude;
-                histogram[(index + 1) % BIN_SIZE] = factor * magnitude;
+                histogram[index] += (1 - factor) * magnitude;
+                histogram[(index + 1) % BIN_SIZE] += factor * magnitude;
 
                 offset++;
             }
