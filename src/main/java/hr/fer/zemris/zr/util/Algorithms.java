@@ -252,7 +252,7 @@ public class Algorithms {
      *
      * @param threads that the main thread should join.
      */
-    private static void joinThreads(Thread[] threads) {
+    public static void joinThreads(Thread[] threads) {
         for (int i = 0, processors = threads.length; i < processors; i++) {
             try {
                 threads[i].join();
