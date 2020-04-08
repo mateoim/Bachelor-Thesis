@@ -342,7 +342,7 @@ public class Algorithms {
      *         and {@code processors} elements used to stop
      *         the threads.
      */
-    private static BlockingQueue<Integer> initializeQueue(int numberOfElement, int processors, int killElement) {
+    public static BlockingQueue<Integer> initializeQueue(int numberOfElement, int processors, int killElement) {
         BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(numberOfElement + processors);
 
         for (int i = 0; i < numberOfElement; i++) {
