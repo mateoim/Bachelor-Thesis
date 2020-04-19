@@ -50,6 +50,11 @@ public class HOGImage {
     private static final float EPSILON = 1E-5f;
 
     /**
+     * Used as a maximum value while calculating {@link #featureVector}.
+     */
+    private static final float TAU = 0.2f;
+
+    /**
      * Keeps the calculated histogram data.
      */
     private float[][] histogram;
@@ -58,6 +63,11 @@ public class HOGImage {
      * Keeps normalized blocks calculated by {@link #normalizeBlocks()}
      */
     private float[][] normalized;
+
+    /**
+     * Keeps calculated data as a feature vector used in detection.
+     */
+    private double[] featureVector;
 
     /**
      * Keeps the calculated magnitude of the image.
@@ -193,6 +203,51 @@ public class HOGImage {
         Algorithms.joinThreads(threads);
 
         return normalized;
+    }
+
+    /**
+     * Calculates the feature vector from this image.
+     *
+     * @return calculated feature vector.
+     */
+    public double[] calculateFeatureVector() {
+        if (featureVector != null) {
+            return featureVector;
+        }
+
+        if (normalized == null) {
+            normalizeBlocks();
+        }
+
+        featureVector = new double[normalized.length * normalized[0].length];
+
+        int index = 0;
+        double sum = 0;
+
+        for (float[] block : normalized) {
+            for (float value : block) {
+                sum += value * value;
+                featureVector[index++] = value;
+            }
+        }
+
+        sum = Math.sqrt(sum + EPSILON);
+        index = 0;
+        double normalizedSum = 0;
+
+        for (double value : featureVector) {
+            value = Math.min(value / sum, TAU);
+            normalizedSum += value * value;
+            featureVector[index++] = value;
+        }
+
+        normalizedSum = Math.sqrt(normalizedSum + EPSILON);
+
+        for (int i = 0, size = featureVector.length; i < size; i++) {
+            featureVector[i] /= normalizedSum;
+        }
+
+        return featureVector;
     }
 
     /**
