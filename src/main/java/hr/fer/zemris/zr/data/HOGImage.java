@@ -4,6 +4,7 @@ import hr.fer.zemris.zr.util.Algorithms;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 
 /**
  * A class that keeps data about histogram of gradients of the given image.
@@ -39,9 +40,24 @@ public class HOGImage {
     private static final int BIN_WIDTH = 20;
 
     /**
+     * Block size used in normalization.
+     */
+    private static final int BLOCK_SIZE = 2;
+
+    /**
+     * Small positive value used to prevent division by zero.
+     */
+    private static final float EPSILON = 1E-5f;
+
+    /**
      * Keeps the calculated histogram data.
      */
     private float[][] histogram;
+
+    /**
+     * Keeps normalized blocks calculated by {@link #normalizeBlocks()}
+     */
+    private float[][] normalized;
 
     /**
      * Keeps the calculated magnitude of the image.
@@ -130,7 +146,7 @@ public class HOGImage {
         Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> calculationThread(queue));
+            Thread thread = new Thread(() -> calculationThread(queue, this::calculateHistogram));
             threads[i] = thread;
 
             thread.start();
@@ -142,11 +158,50 @@ public class HOGImage {
     }
 
     /**
+     * Normalizes calculated {@link #histogram} as blocks of size {@link #BLOCK_SIZE} by {@link #BLOCK_SIZE}.
+     *
+     * @return array of normalized blocks.
+     */
+    public float[][] normalizeBlocks() {
+        if (normalized != null) {
+            return normalized;
+        }
+
+        if (histogram == null) {
+            calculateHistogram();
+        }
+
+        final int rowSize = width / WINDOW_SIZE - 1;
+        final int columnSize = height / WINDOW_SIZE - 1;
+        final int totalSize = rowSize * columnSize;
+
+        normalized = new float[totalSize][BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
+
+        final int processors = Runtime.getRuntime().availableProcessors();
+
+        BlockingQueue<Integer> queue = Algorithms.initializeQueue(totalSize, processors, -1);
+
+        Thread[] threads = new Thread[processors];
+
+        for (int i = 0; i < processors; i++) {
+            Thread thread = new Thread(() -> calculationThread(queue, this::normalize));
+            threads[i] = thread;
+
+            thread.start();
+        }
+
+        Algorithms.joinThreads(threads);
+
+        return normalized;
+    }
+
+    /**
      * Thread job used to calculate histogram data.
      *
      * @param queue containing the indexes of histogram positions.
+     * @param function used for calculation.
      */
-    private void calculationThread(BlockingQueue<Integer> queue) {
+    private void calculationThread(BlockingQueue<Integer> queue, Consumer<Integer> function) {
         while (true) {
             int index;
 
@@ -160,7 +215,7 @@ public class HOGImage {
                 break;
             }
 
-            calculateHistogram(index);
+            function.accept(index);
         }
     }
 
@@ -191,6 +246,43 @@ public class HOGImage {
 
                 offset++;
             }
+        }
+    }
+
+    /**
+     * Job used to normalize a calculated {@link #histogram} by blocks.
+     *
+     * @param position index of the block to be normalized.
+     */
+    private void normalize(int position) {
+        final int rowSize = width / WINDOW_SIZE - 1;
+        final int skipSize = width / WINDOW_SIZE;
+        final int row = position / rowSize;
+        final int offset = row * (width / WINDOW_SIZE) + (position % rowSize);
+
+        float[] normalized = this.normalized[position];
+        double sum = 0;
+        int index = 0;
+
+        for (int i = 0; i < BLOCK_SIZE; i++) {
+            int currentOffset = offset + i * skipSize;
+            for (int j = 0; j < BLOCK_SIZE; j++) {
+                float[] histogram = this.histogram[currentOffset++];
+
+                for (int k = 0; k < BIN_SIZE; k++) {
+                    float value = histogram[k];
+                    normalized[index * BIN_SIZE + k] = value;
+                    sum += value * value;
+                }
+
+                index++;
+            }
+        }
+
+        sum = Math.sqrt(sum + EPSILON);
+
+        for (int i = 0, size = normalized.length; i < size; i++) {
+            normalized[i] /= sum;
         }
     }
 }
