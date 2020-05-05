@@ -301,7 +301,7 @@ public class Algorithms {
         int arrayWidth = pixelSize * width;
         int offset = arrayWidth + (column * pixelSize);
 
-        for (int i = pixelSize, limit = height - 1; i < limit; i++) {
+        for (int i = 1, limit = height - 1; i < limit; i++) {
             for (int j = 0; j < pixelSize; j++) {
                 dest[offset + j] = -src[offset + j - arrayWidth] + src[offset + j + arrayWidth];
             }
