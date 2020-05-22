@@ -3,15 +3,19 @@ package hr.fer.zemris.zr.gui;
 import hr.fer.zemris.zr.HOGCalculator;
 import hr.fer.zemris.zr.data.HOGImage;
 import hr.fer.zemris.zr.util.Algorithms;
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Class that represents GUI of {@link HOGCalculator}.
@@ -22,14 +26,39 @@ import java.nio.file.Path;
 public class HOGFrame extends JFrame {
 
     /**
+     * Default scaling factor used to create a pyramid.
+     */
+    private static final double SCALING_FACTOR = 1.5;
+
+    /**
+     * Required width of image to be used with the algorithm.
+     */
+    private static final int DEFAULT_WIDTH = 64;
+
+    /**
+     * Required height of image to be used with the algorithm.
+     */
+    private static final int DEFAULT_HEIGHT = 128;
+
+    /**
      * Keeps currently loaded image.
      */
     private BufferedImage loadedImage;
 
     /**
+     * Keeps loaded image as an OpenCV {@link Mat}.
+     */
+    private Mat image;
+
+    /**
      * Used to display {@link #loadedImage}.
      */
-    private JLabel imageLabel;
+    private final JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
+
+    private final JCheckBox parallelCheckbox = new JCheckBox("Parallel vector calculation", true);
+
+    private final JCheckBox parallelChildrenCheckbox =
+            new JCheckBox("Parallel histogram calculation and normalization");
 
     /**
      * Action used to open an image.
@@ -57,8 +86,12 @@ public class HOGFrame extends JFrame {
      * Used internally to initialize components.
      */
     private void initGUI() {
+        add(imageLabel, BorderLayout.CENTER);
+        JPanel controlsPanel = new JPanel(new BorderLayout());
+        add(controlsPanel, BorderLayout.SOUTH);
+
         final JPanel buttonPanel = new JPanel();
-        add(buttonPanel, BorderLayout.SOUTH);
+        controlsPanel.add(buttonPanel, BorderLayout.NORTH);
 
         final JButton dx = new JButton("dx");
         dx.addActionListener((l) -> deriveImage('x'));
@@ -78,10 +111,22 @@ public class HOGFrame extends JFrame {
         buttonPanel.add(magnitude);
         buttonPanel.add(angle);
 
-        final JButton hog = new JButton("HOG");
+        final JButton hog = new JButton("HOG visualization");
         buttonPanel.add(hog);
 
         hog.addActionListener(e -> calculateHOG());
+
+        final JButton window = new JButton("Sliding window");
+        buttonPanel.add(window);
+
+        window.addActionListener(e -> slidingWindow());
+
+        JPanel checkboxPanel = new JPanel();
+        controlsPanel.add(checkboxPanel, BorderLayout.SOUTH);
+        checkboxPanel.setBorder(new TitledBorder("Parallelization settings"));
+
+        checkboxPanel.add(parallelCheckbox);
+        checkboxPanel.add(parallelChildrenCheckbox);
 
         initMenuBar();
 
@@ -121,9 +166,9 @@ public class HOGFrame extends JFrame {
 
         try {
             loadedImage = ImageIO.read(src.toFile());
-            imageLabel = new JLabel(new ImageIcon(loadedImage));
-            add(imageLabel, BorderLayout.CENTER);
+            imageLabel.setIcon(new ImageIcon(loadedImage));
             pack();
+            image = Imgcodecs.imread(src.toString());
         } catch (IOException | NullPointerException exc) {
             JOptionPane.showOptionDialog(
                     this,
@@ -218,5 +263,31 @@ public class HOGFrame extends JFrame {
         final double[] featureVector = image.calculateFeatureVector();
 
         imageLabel.setIcon(new HOGIcon(featureVector, loadedImage));
+    }
+
+    /**
+     * Creates an image pyramid and runs the sliding window algorithm.
+     */
+    private void slidingWindow() {
+        if (loadedImage == null) {
+            return;
+        }
+
+        long startTime = System.nanoTime();
+
+        List<HOGImage> pyramid = Algorithms.createPyramid(image, SCALING_FACTOR, DEFAULT_HEIGHT, DEFAULT_WIDTH);
+
+        double[][][] featureVectors = new double[pyramid.size()][][];
+
+        int index = 0;
+
+        for (HOGImage hogImage : pyramid) {
+            featureVectors[index++] = hogImage.slideWindow(parallelCheckbox.isSelected(),
+                    parallelChildrenCheckbox.isSelected());
+        }
+
+        long endTime = System.nanoTime();
+
+        System.out.println((endTime - startTime) / 1_000_000_000d);
     }
 }
