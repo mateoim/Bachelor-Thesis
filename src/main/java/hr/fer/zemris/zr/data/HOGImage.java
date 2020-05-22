@@ -4,7 +4,7 @@ import hr.fer.zemris.zr.util.Algorithms;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A class that keeps data about histogram of gradients of the given image.
@@ -53,6 +53,11 @@ public class HOGImage {
      * Used as a maximum value while calculating {@link #featureVector}.
      */
     private static final float TAU = 0.2f;
+
+    /**
+     * Step size used in {@link #slideWindow(boolean, boolean)}.
+     */
+    private static final int STEP_SIZE = 5;
 
     /**
      * Keeps the calculated histogram data.
@@ -156,7 +161,7 @@ public class HOGImage {
         Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> calculationThread(queue, this::calculateHistogram));
+            Thread thread = new Thread(() -> calculationThread(queue, this::calculateHistogram, this.histogram));
             threads[i] = thread;
 
             thread.start();
@@ -181,8 +186,8 @@ public class HOGImage {
             calculateHistogram();
         }
 
-        final int rowSize = width / WINDOW_SIZE - 1;
-        final int columnSize = height / WINDOW_SIZE - 1;
+        final int rowSize = DEFAULT_WIDTH / WINDOW_SIZE - 1;
+        final int columnSize = DEFAULT_HEIGHT / WINDOW_SIZE - 1;
         final int totalSize = rowSize * columnSize;
 
         normalized = new float[totalSize][BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
@@ -194,7 +199,7 @@ public class HOGImage {
         Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> calculationThread(queue, this::normalize));
+            Thread thread = new Thread(() -> calculationThread(queue, this::normalize, this.normalized));
             threads[i] = thread;
 
             thread.start();
@@ -219,7 +224,19 @@ public class HOGImage {
             normalizeBlocks();
         }
 
-        featureVector = new double[normalized.length * normalized[0].length];
+        featureVector = calculateFeatureVector(normalized);
+        return featureVector;
+    }
+
+    /**
+     * Calculates the feature vector from a part of this image.
+     *
+     * @param normalized array containing normalized block values.
+     *
+     * @return calculated feature vector.
+     */
+    private double[] calculateFeatureVector(float[][] normalized) {
+        double[] featureVector = new double[normalized.length * normalized[0].length];
 
         int index = 0;
         double sum = 0;
@@ -251,12 +268,106 @@ public class HOGImage {
     }
 
     /**
-     * Thread job used to calculate histogram data.
+     * Simulates sliding window mechanism and calculates feature vector
+     * for every position.
      *
-     * @param queue containing the indexes of histogram positions.
-     * @param function used for calculation.
+     * @param parallel whether feature vector calculation is parallel.
+     * @param parallelChildren whether histogram calculation and normalization is parallel.
+     *
+     * @return an array containing calculated feature vector.
      */
-    private void calculationThread(BlockingQueue<Integer> queue, Consumer<Integer> function) {
+    public double[][] slideWindow(boolean parallel, boolean parallelChildren) {
+        final int processors = Runtime.getRuntime().availableProcessors();
+        BlockingQueue<Integer> queue = Algorithms.initializeQueue(width, height, DEFAULT_WIDTH, DEFAULT_HEIGHT,
+                STEP_SIZE, processors, -1);
+
+        final int totalSize = queue.size() - processors;
+        final int normalizedSize = (DEFAULT_WIDTH / WINDOW_SIZE - 1) * (DEFAULT_HEIGHT / WINDOW_SIZE - 1);
+
+        final double[][] featureVectors = new double[totalSize][normalizedSize * BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
+
+        if (parallel) {
+            Thread[] threads = new Thread[processors];
+
+            for (int i = 0; i < processors; i++) {
+                Thread thread = new Thread(() -> windowThread(queue, featureVectors, parallelChildren));
+                threads[i] = thread;
+
+                thread.start();
+            }
+
+            Algorithms.joinThreads(threads);
+        } else {
+            for (int i = 0; i < totalSize; i++) {
+                featureVectors[i] = calculateWindow(i, parallelChildren);
+            }
+        }
+
+        return featureVectors;
+    }
+
+    /**
+     * Calculates feature vector in the given window.
+     *
+     * @param index used to indicate window position.
+     * @param parallel whether the calculation is parallel or not.
+     *
+     * @return calculated feature vector.
+     */
+    private double[] calculateWindow(int index, boolean parallel) {
+        final int histogramSize = DEFAULT_HEIGHT / WINDOW_SIZE * DEFAULT_WIDTH / WINDOW_SIZE;
+        final int normalizedSize = (DEFAULT_WIDTH / WINDOW_SIZE - 1) * (DEFAULT_HEIGHT / WINDOW_SIZE - 1);
+
+        final float[][] histogram = new float[histogramSize][BIN_SIZE];
+        final float[][] normalized = new float[normalizedSize][BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
+
+        if (parallel) {
+            final int processors = Runtime.getRuntime().availableProcessors();
+
+            BlockingQueue<Integer> histogramQueue = Algorithms.initializeQueue(histogramSize, processors, -1);
+            Thread[] threads = new Thread[processors];
+
+            for (int i = 0; i < processors; i++) {
+                Thread thread = new Thread(() -> histogramThread(histogramQueue, index, histogram));
+                threads[i] = thread;
+
+                thread.start();
+            }
+
+            Algorithms.joinThreads(threads);
+
+            BlockingQueue<Integer> normalizationQueue =
+                    Algorithms.initializeQueue(normalizedSize, processors, -1);
+
+            for (int i = 0; i < processors; i++) {
+                Thread thread = new Thread(() -> normalizationThread(normalizationQueue, normalized, histogram));
+                threads[i] = thread;
+
+                thread.start();
+            }
+
+            Algorithms.joinThreads(threads);
+        } else {
+            for (int i = 0; i < histogramSize; i++) {
+                histogram[i] = calculateHistogram(i, index);
+            }
+
+            for (int i = 0; i < normalizedSize; i++) {
+                normalized[i] = normalize(i, histogram);
+            }
+        }
+
+        return calculateFeatureVector(normalized);
+    }
+
+    /**
+     * Thread job used to calculate a feature vector.
+     *
+     * @param queue containing indexes of image parts to calculate.
+     * @param featureVectors array used to store calculated feature vectors.
+     * @param parallel used to toggle {@link #calculateWindow(int, boolean)} parallelization.
+     */
+    private void windowThread(BlockingQueue<Integer> queue, double[][] featureVectors, boolean parallel) {
         while (true) {
             int index;
 
@@ -270,7 +381,83 @@ public class HOGImage {
                 break;
             }
 
-            function.accept(index);
+            featureVectors[index] = calculateWindow(index, parallel);
+        }
+    }
+
+    /**
+     * Thread job used to calculate histograms.
+     *
+     * @param queue containing offset indexes.
+     * @param index defines index of the image whose histogram is being calculated.
+     * @param target array used to store normalized blocks.
+     */
+    private void histogramThread(BlockingQueue<Integer> queue, int index, float[][] target) {
+        while (true) {
+            int currentIndex;
+
+            try {
+                currentIndex = queue.take();
+            } catch (InterruptedException exc) {
+                continue;
+            }
+
+            if (currentIndex == -1) {
+                break;
+            }
+
+            target[currentIndex] = calculateHistogram(currentIndex, index);
+        }
+    }
+
+    /**
+     * Thread job used to normalize blocks.
+     *
+     * @param queue containing block indexes.
+     * @param target array used to store normalized blocks.
+     * @param source array containing calculated histograms.
+     */
+    private void normalizationThread(BlockingQueue<Integer> queue, float[][] target, float[][] source) {
+        while (true) {
+            int currentIndex;
+
+            try {
+                currentIndex = queue.take();
+            } catch (InterruptedException exc) {
+                continue;
+            }
+
+            if (currentIndex == -1) {
+                break;
+            }
+
+            target[currentIndex] = normalize(currentIndex, source);
+        }
+    }
+
+    /**
+     * Thread job used to calculate histogram data.
+     *
+     * @param queue containing the indexes of histogram positions.
+     * @param function used for calculation.
+     * @param target array used to store calculated data.
+     */
+    private void calculationThread(BlockingQueue<Integer> queue, Function<Integer, float[]> function,
+                                   float[][] target) {
+        while (true) {
+            int index;
+
+            try {
+                index = queue.take();
+            } catch (InterruptedException exc) {
+                continue;
+            }
+
+            if (index == -1) {
+                break;
+            }
+
+            target[index] = function.apply(index);
         }
     }
 
@@ -279,16 +466,31 @@ public class HOGImage {
      *
      * @param position index of the histogram to be calculated.
      */
-    private void calculateHistogram(int position) {
+    private float[] calculateHistogram(int position) {
+        return calculateHistogram(position, 0);
+    }
+
+    /**
+     * Calculates the histogram at the given index.
+     *
+     * @param position index of the histogram to be calculated.
+     * @param offsetIndex index of offset in the whole image.
+     */
+    private float[] calculateHistogram(int position, int offsetIndex) {
+        final int windowRow = width / STEP_SIZE;
+        final int rowIndex = offsetIndex / windowRow;
+        final int columnOffset = offsetIndex % windowRow;
+        final int windowOffset = rowIndex * width * bytesPerPixel + columnOffset * STEP_SIZE;
+
         final int widthSize = DEFAULT_WIDTH / WINDOW_SIZE;
         final int rowPosition = position / widthSize;
         final int rowOffset = (position - (WINDOW_SIZE * rowPosition)) * WINDOW_SIZE * bytesPerPixel;
-        final int initialOffset = rowPosition * DEFAULT_WIDTH * WINDOW_SIZE * bytesPerPixel + rowOffset;
+        final int initialOffset = rowPosition * DEFAULT_WIDTH * WINDOW_SIZE * bytesPerPixel + rowOffset + windowOffset;
 
-        float[] histogram = this.histogram[position];
+        float[] histogram = new float[BIN_SIZE];
 
         for (int i = 0; i < WINDOW_SIZE; i++) {
-            int offset = initialOffset + i * DEFAULT_WIDTH * bytesPerPixel;
+            int offset = initialOffset + i * width * bytesPerPixel;
             for (int j = 0; j < WINDOW_SIZE * bytesPerPixel; j++) {
                 final float angle = this.angle[offset];
                 final float magnitude = this.magnitude[offset];
@@ -302,6 +504,8 @@ public class HOGImage {
                 offset++;
             }
         }
+
+        return histogram;
     }
 
     /**
@@ -309,20 +513,30 @@ public class HOGImage {
      *
      * @param position index of the block to be normalized.
      */
-    private void normalize(int position) {
-        final int rowSize = width / WINDOW_SIZE - 1;
-        final int skipSize = width / WINDOW_SIZE;
-        final int row = position / rowSize;
-        final int offset = row * (width / WINDOW_SIZE) + (position % rowSize);
+    private float[] normalize(int position) {
+        return normalize(position, this.histogram);
+    }
 
-        float[] normalized = this.normalized[position];
+    /**
+     * Job used to normalize a calculated {@link #histogram} by blocks.
+     *
+     * @param position index of the block to be normalized.
+     * @param sourceHistogram histogram being normalized.
+     */
+    private float[] normalize(int position, float[][] sourceHistogram) {
+        final int rowSize = DEFAULT_WIDTH / WINDOW_SIZE - 1;
+        final int skipSize = DEFAULT_WIDTH / WINDOW_SIZE;
+        final int row = position / rowSize;
+        final int offset = row * (DEFAULT_WIDTH / WINDOW_SIZE) + (position % rowSize);
+
+        float[] normalized = new float[BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
         double sum = 0;
         int index = 0;
 
         for (int i = 0; i < BLOCK_SIZE; i++) {
             int currentOffset = offset + i * skipSize;
             for (int j = 0; j < BLOCK_SIZE; j++) {
-                float[] histogram = this.histogram[currentOffset++];
+                float[] histogram = sourceHistogram[currentOffset++];
 
                 for (int k = 0; k < BIN_SIZE; k++) {
                     float value = histogram[k];
@@ -339,5 +553,7 @@ public class HOGImage {
         for (int i = 0, size = normalized.length; i < size; i++) {
             normalized[i] /= sum;
         }
+
+        return normalized;
     }
 }
