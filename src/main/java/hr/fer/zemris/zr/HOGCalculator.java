@@ -1,6 +1,7 @@
 package hr.fer.zemris.zr;
 
 import hr.fer.zemris.zr.gui.HOGFrame;
+import nu.pattern.OpenCV;
 
 import javax.swing.SwingUtilities;
 
@@ -23,6 +24,7 @@ public class HOGCalculator {
      * @param args nothing.
      */
     public static void main(String[] args) {
+        OpenCV.loadLocally();
         SwingUtilities.invokeLater(HOGFrame::new);
     }
 }
