@@ -1,7 +1,14 @@
 package hr.fer.zemris.zr.util;
 
+import hr.fer.zemris.zr.data.HOGImage;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
@@ -247,6 +254,81 @@ public class Algorithms {
     }
 
     /**
+     * Creates a {@link List} of scaled images from the given image.
+     *
+     * @param image matrix that represents an image.
+     * @param factor scaling factor used to resize the image.
+     * @param minHeight height threshold used to stop the algorithm.
+     * @param minWidth width threshold used to stop the algorithm.
+     *
+     * @return {@link List} of scaled images.
+     */
+    public static List<HOGImage> createPyramid(Mat image, double factor, int minHeight, int minWidth) {
+        List<HOGImage> pyramid = new LinkedList<>();
+        pyramid.add(toHOGImage(image));
+
+        int width = image.width();
+        int height = image.height();
+        Mat nextImage = image;
+
+        while (height / factor > minHeight && width / factor > minWidth) {
+            nextImage = scaleImage(nextImage, factor);
+            height = nextImage.height();
+            width = nextImage.width();
+
+            pyramid.add(toHOGImage(nextImage));
+        }
+
+        return pyramid;
+    }
+
+    /**
+     * Scales the given image using the given factor.
+     *
+     * @param image to be scaled.
+     * @param factor used to scale the image.
+     *
+     * @return scaled image.
+     */
+    private static Mat scaleImage(Mat image, double factor) {
+        Mat resized = new Mat();
+        Imgproc.resize(image, resized, new Size(image.width() / factor, image.height() / factor));
+        return resized;
+    }
+
+    /**
+     * Converts the given {@link Mat} to a {@link HOGImage}.
+     *
+     * @param original image being converted.
+     *
+     * @return resulting {@link HOGImage}.
+     */
+    private static HOGImage toHOGImage(Mat original){
+        final int width = original.width();
+        final int height = original.height();
+        final int bytesPerPixel = original.channels();
+
+        float[] pixels = new float[(int) original.total() * bytesPerPixel];
+
+        int index = 0;
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                double[] data = original.get(i, j);
+
+                for (int k = 0; k < bytesPerPixel; k++) {
+                    pixels[index++] = (float) data[k] / 255;
+                }
+            }
+        }
+
+        float[] dx = derive(pixels, 'x', width, height, bytesPerPixel, true);
+        float[] dy = derive(pixels, 'y', width, height, bytesPerPixel, true);
+
+        return new HOGImage(calculateMagnitude(dx, dy), calculateAngle(dx, dy), width, height, bytesPerPixel);
+    }
+
+    /**
      * Used in methods that use multithreading. Causes main thread
      * to {@link Thread#join()} all threads in {@code threads}.
      *
@@ -354,5 +436,34 @@ public class Algorithms {
         }
 
         return queue;
+    }
+
+    /**
+     * Initializes a {@link BlockingQueue} with indexes calculated by simulating
+     * a sliding window with given {@code step} on an image with the given
+     * {@code width} and {@code height} and defined minimum width and height.
+     *
+     * @param width of the image.
+     * @param height of the image.
+     * @param minWidth minimum width of the image.
+     * @param minHeight minimum height of the image.
+     * @param step used bby the sliding window.
+     * @param processors number of processors.
+     * @param killElement element used to terminate a {@link Thread}.
+     *
+     * @return a {@link BlockingQueue} filled with valid indexes and
+     *          defined number of kill elements at the end.
+     */
+    public static BlockingQueue<Integer> initializeQueue(int width, int height, int minWidth, int minHeight,
+                                                         int step, int processors, int killElement) {
+        int counter = 0;
+
+        for (int i = width; i >= minWidth; i -= step) {
+            for (int j = height; j >= minHeight; j -= step) {
+                counter++;
+            }
+        }
+
+        return initializeQueue(counter, processors, killElement);
     }
 }
