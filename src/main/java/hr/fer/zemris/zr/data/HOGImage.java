@@ -477,15 +477,15 @@ public class HOGImage {
      * @param offsetIndex index of offset in the whole image.
      */
     private float[] calculateHistogram(int position, int offsetIndex) {
-        final int windowRow = width / STEP_SIZE;
+        final int windowRow = (width - DEFAULT_WIDTH + STEP_SIZE) / STEP_SIZE;
         final int rowIndex = offsetIndex / windowRow;
         final int columnOffset = offsetIndex % windowRow;
-        final int windowOffset = rowIndex * width * bytesPerPixel + columnOffset * STEP_SIZE;
+        final int windowOffset = rowIndex * width * bytesPerPixel * STEP_SIZE + columnOffset * STEP_SIZE * bytesPerPixel;
 
         final int widthSize = DEFAULT_WIDTH / WINDOW_SIZE;
         final int rowPosition = position / widthSize;
         final int rowOffset = (position - (WINDOW_SIZE * rowPosition)) * WINDOW_SIZE * bytesPerPixel;
-        final int initialOffset = rowPosition * DEFAULT_WIDTH * WINDOW_SIZE * bytesPerPixel + rowOffset + windowOffset;
+        final int initialOffset = rowPosition * width * WINDOW_SIZE * bytesPerPixel + rowOffset + windowOffset;
 
         float[] histogram = new float[BIN_SIZE];
 
