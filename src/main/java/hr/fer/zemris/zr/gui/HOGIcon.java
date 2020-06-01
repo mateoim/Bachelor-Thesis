@@ -49,49 +49,49 @@ public class HOGIcon extends ImageIcon {
     /**
      * Keeps the feature vector drawn on the image.
      */
-    private final double[] featureVector;
+    private final float[] featureVector;
 
-    public HOGIcon(double[] featureVector, String filename, String description) {
+    public HOGIcon(float[] featureVector, String filename, String description) {
         super(filename, description);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, String filename) {
+    public HOGIcon(float[] featureVector, String filename) {
         super(filename);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, URL location, String description) {
+    public HOGIcon(float[] featureVector, URL location, String description) {
         super(location, description);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, URL location) {
+    public HOGIcon(float[] featureVector, URL location) {
         super(location);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, Image image, String description) {
+    public HOGIcon(float[] featureVector, Image image, String description) {
         super(image, description);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, Image image) {
+    public HOGIcon(float[] featureVector, Image image) {
         super(image);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, byte[] imageData, String description) {
+    public HOGIcon(float[] featureVector, byte[] imageData, String description) {
         super(imageData, description);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector, byte[] imageData) {
+    public HOGIcon(float[] featureVector, byte[] imageData) {
         super(imageData);
         this.featureVector = featureVector;
     }
 
-    public HOGIcon(double[] featureVector) {
+    public HOGIcon(float[] featureVector) {
         super();
         this.featureVector = featureVector;
     }

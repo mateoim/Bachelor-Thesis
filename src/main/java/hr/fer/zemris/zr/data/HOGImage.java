@@ -72,7 +72,7 @@ public class HOGImage {
     /**
      * Keeps calculated data as a feature vector used in detection.
      */
-    private double[] featureVector;
+    private float[] featureVector;
 
     /**
      * Keeps the calculated magnitude of the image.
@@ -215,7 +215,7 @@ public class HOGImage {
      *
      * @return calculated feature vector.
      */
-    public double[] calculateFeatureVector() {
+    public float[] calculateFeatureVector() {
         if (featureVector != null) {
             return featureVector;
         }
@@ -235,8 +235,8 @@ public class HOGImage {
      *
      * @return calculated feature vector.
      */
-    private double[] calculateFeatureVector(float[][] normalized) {
-        double[] featureVector = new double[normalized.length * normalized[0].length];
+    private float[] calculateFeatureVector(float[][] normalized) {
+        float[] featureVector = new float[normalized.length * normalized[0].length];
 
         int index = 0;
         double sum = 0;
@@ -252,8 +252,8 @@ public class HOGImage {
         index = 0;
         double normalizedSum = 0;
 
-        for (double value : featureVector) {
-            value = Math.min(value / sum, TAU);
+        for (float value : featureVector) {
+            value = (float) Math.min(value / sum, TAU);
             normalizedSum += value * value;
             featureVector[index++] = value;
         }
@@ -276,7 +276,7 @@ public class HOGImage {
      *
      * @return an array containing calculated feature vector.
      */
-    public double[][] slideWindow(boolean parallel, boolean parallelChildren) {
+    public float[][] slideWindow(boolean parallel, boolean parallelChildren) {
         final int processors = Runtime.getRuntime().availableProcessors();
         BlockingQueue<Integer> queue = Algorithms.initializeQueue(width, height, DEFAULT_WIDTH, DEFAULT_HEIGHT,
                 STEP_SIZE, processors, -1);
@@ -284,7 +284,7 @@ public class HOGImage {
         final int totalSize = queue.size() - processors;
         final int normalizedSize = (DEFAULT_WIDTH / WINDOW_SIZE - 1) * (DEFAULT_HEIGHT / WINDOW_SIZE - 1);
 
-        final double[][] featureVectors = new double[totalSize][normalizedSize * BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
+        final float[][] featureVectors = new float[totalSize][normalizedSize * BIN_SIZE * BLOCK_SIZE * BLOCK_SIZE];
 
         if (parallel) {
             Thread[] threads = new Thread[processors];
@@ -314,7 +314,7 @@ public class HOGImage {
      *
      * @return calculated feature vector.
      */
-    private double[] calculateWindow(int index, boolean parallel) {
+    public float[] calculateWindow(int index, boolean parallel) {
         final int histogramSize = DEFAULT_HEIGHT / WINDOW_SIZE * DEFAULT_WIDTH / WINDOW_SIZE;
         final int normalizedSize = (DEFAULT_WIDTH / WINDOW_SIZE - 1) * (DEFAULT_HEIGHT / WINDOW_SIZE - 1);
 
@@ -367,7 +367,7 @@ public class HOGImage {
      * @param featureVectors array used to store calculated feature vectors.
      * @param parallel used to toggle {@link #calculateWindow(int, boolean)} parallelization.
      */
-    private void windowThread(BlockingQueue<Integer> queue, double[][] featureVectors, boolean parallel) {
+    private void windowThread(BlockingQueue<Integer> queue, float[][] featureVectors, boolean parallel) {
         while (true) {
             int index;
 
