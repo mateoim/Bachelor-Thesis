@@ -447,7 +447,7 @@ public class Algorithms {
      * @param height of the image.
      * @param minWidth minimum width of the image.
      * @param minHeight minimum height of the image.
-     * @param step used bby the sliding window.
+     * @param step used by the sliding window.
      * @param processors number of processors.
      * @param killElement element used to terminate a {@link Thread}.
      *
@@ -456,6 +456,22 @@ public class Algorithms {
      */
     public static BlockingQueue<Integer> initializeQueue(int width, int height, int minWidth, int minHeight,
                                                          int step, int processors, int killElement) {
+        return initializeQueue(calculateNumberOfWindows(width, height, minWidth, minHeight, step),
+                processors, killElement);
+    }
+
+    /**
+     * Calculates the number of sliding window positions for the given parameters.
+     *
+     * @param width of the image.
+     * @param height of the image.
+     * @param minWidth minimum width of the image.
+     * @param minHeight minimum height of the image.
+     * @param step used by the sliding window.
+     *
+     * @return number of sliding window positions.
+     */
+    public static int calculateNumberOfWindows(int width, int height, int minWidth, int minHeight, int step) {
         int counter = 0;
 
         for (int i = width; i >= minWidth; i -= step) {
@@ -464,6 +480,6 @@ public class Algorithms {
             }
         }
 
-        return initializeQueue(counter, processors, killElement);
+        return counter;
     }
 }
