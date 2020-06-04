@@ -3,7 +3,10 @@ package hr.fer.zemris.zr.util;
 import hr.fer.zemris.zr.data.HOGImage;
 
 import java.awt.image.BufferedImage;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -29,6 +32,16 @@ public class ThreadsJobs {
      * Offset used in positive examples.
      */
     private static final int POSITIVE_OFFSET = 3;
+
+    /**
+     * Step size used in {@link HOGImage#slideWindow(boolean, boolean)}.
+     */
+    private static final int STEP_SIZE = 5;
+
+    /**
+     * Number of samples per image used for {@link #negativeCalculationJob(BufferedImage, ThreadLocalRandom)}.
+     */
+    private static final int NUMBER_OF_SAMPLES = 10;
 
     /**
      * Don't let anyone instantiate this class.
@@ -62,7 +75,7 @@ public class ThreadsJobs {
     }
 
     /**
-     * Job dont by {@link #positiveCalculationThread(BlockingQueue, BlockingQueue, BufferedImage)}.
+     * Job done by {@link #positiveCalculationThread(BlockingQueue, BlockingQueue, BufferedImage)}.
      *
      * @param image currently being processed.
      *
@@ -98,6 +111,59 @@ public class ThreadsJobs {
 
         HOGImage hogImage = new HOGImage(scaledMagnitude, scaledAngle, DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelCount);
         return hogImage.calculateWindow(0, false);
+    }
+
+    /**
+     * Thread body used to calculate vectors for negative examples.
+     *
+     * @param queue containing read images.
+     * @param targetQueue used to store calculated vectors.
+     * @param killElement used to stop the thread.
+     */
+    public static void negativeCalculationThread(BlockingQueue<BufferedImage> queue,
+                                                 BlockingQueue<float[]> targetQueue, BufferedImage killElement) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        while (true) {
+            BufferedImage image;
+
+            try {
+                image = queue.take();
+            } catch (InterruptedException exc) {
+                continue;
+            }
+
+            if (image == killElement) {
+                break;
+            }
+
+            List<float[]> images = negativeCalculationJob(image, random);
+
+            for (float[] vector : images) {
+                targetQueue.offer(vector);
+            }
+        }
+    }
+
+    /**
+     * Job done by {@link #negativeCalculationThread(BlockingQueue, BlockingQueue, BufferedImage)}.
+     *
+     * @param image currently being processed.
+     * @param random used to generate sample indexes.
+     *
+     * @return a {@link List} of randomly selected feature vectors of the given image.
+     */
+    private static List<float[]> negativeCalculationJob(BufferedImage image, ThreadLocalRandom random) {
+        final HOGImage hogImage = new HOGImage(image);
+        final int numberOfPositions = Algorithms.calculateNumberOfWindows(image.getWidth(), image.getHeight(),
+                DEFAULT_WIDTH, DEFAULT_HEIGHT, STEP_SIZE);
+
+        final List<float[]> vectors = new LinkedList<>();
+
+        for (int i = 0; i < NUMBER_OF_SAMPLES; i++) {
+            vectors.add(hogImage.calculateWindow(random.nextInt(numberOfPositions), false));
+        }
+
+        return vectors;
     }
 
     /**

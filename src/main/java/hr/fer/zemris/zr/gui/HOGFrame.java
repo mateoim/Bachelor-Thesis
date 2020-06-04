@@ -374,11 +374,11 @@ public class HOGFrame extends JFrame {
             return;
         }
 
-        final float[][] positiveVectors = calculateSubset(positive);
+        final float[][] positiveVectors = calculateSubset(positive, true);
 
         if (positiveVectors == null) return;
 
-        final float[][] negativeVectors = calculateSubset(negative);
+        final float[][] negativeVectors = calculateSubset(negative, false);
 
         if (negativeVectors == null) return;
 
@@ -430,10 +430,11 @@ public class HOGFrame extends JFrame {
      * Used to calculate feature vectors for a subset contained in the given directory.
      *
      * @param path to the directory containing the subset.
+     * @param positive used to indicate whether positive or negative examples are being calculated.
      *
      * @return an {@code array} containing calculated feature vectors.
      */
-    private float[][] calculateSubset(Path path) {
+    private float[][] calculateSubset(Path path, boolean positive) {
         final ImageVisitor visitor = new ImageVisitor();
 
         try {
@@ -460,8 +461,15 @@ public class HOGFrame extends JFrame {
         final Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> ThreadsJobs.positiveCalculationThread(queue, calculatedVectors,
-                    visitor.killElement));
+            Thread thread;
+            if (positive) {
+                thread = new Thread(() -> ThreadsJobs.positiveCalculationThread(queue, calculatedVectors,
+                        visitor.killElement));
+            } else {
+                thread = new Thread(() -> ThreadsJobs.negativeCalculationThread(queue, calculatedVectors,
+                        visitor.killElement));
+            }
+
             threads[i] = thread;
             thread.start();
         }
