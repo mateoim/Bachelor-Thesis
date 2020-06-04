@@ -1,10 +1,10 @@
 package hr.fer.zemris.zr.data;
 
 import hr.fer.zemris.zr.util.Algorithms;
+import hr.fer.zemris.zr.util.ThreadsJobs;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.Function;
 
 /**
  * A class that keeps data about histogram of gradients of the given image.
@@ -161,7 +161,8 @@ public class HOGImage {
         Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> calculationThread(queue, this::calculateHistogram, this.histogram));
+            Thread thread = new Thread(() -> ThreadsJobs.calculationThread(queue,
+                    this::calculateHistogram, this.histogram));
             threads[i] = thread;
 
             thread.start();
@@ -199,7 +200,7 @@ public class HOGImage {
         Thread[] threads = new Thread[processors];
 
         for (int i = 0; i < processors; i++) {
-            Thread thread = new Thread(() -> calculationThread(queue, this::normalize, this.normalized));
+            Thread thread = new Thread(() -> ThreadsJobs.calculationThread(queue, this::normalize, this.normalized));
             threads[i] = thread;
 
             thread.start();
@@ -290,7 +291,8 @@ public class HOGImage {
             Thread[] threads = new Thread[processors];
 
             for (int i = 0; i < processors; i++) {
-                Thread thread = new Thread(() -> windowThread(queue, featureVectors, parallelChildren));
+                Thread thread = new Thread(() -> ThreadsJobs.windowThread(queue, featureVectors, parallelChildren,
+                        this::calculateWindow));
                 threads[i] = thread;
 
                 thread.start();
@@ -328,7 +330,8 @@ public class HOGImage {
             Thread[] threads = new Thread[processors];
 
             for (int i = 0; i < processors; i++) {
-                Thread thread = new Thread(() -> histogramThread(histogramQueue, index, histogram));
+                Thread thread = new Thread(() -> ThreadsJobs.hogThread(histogramQueue, index, histogram,
+                        this::calculateHistogram));
                 threads[i] = thread;
 
                 thread.start();
@@ -340,7 +343,8 @@ public class HOGImage {
                     Algorithms.initializeQueue(normalizedSize, processors, -1);
 
             for (int i = 0; i < processors; i++) {
-                Thread thread = new Thread(() -> normalizationThread(normalizationQueue, normalized, histogram));
+                Thread thread = new Thread(() -> ThreadsJobs.hogThread(normalizationQueue, normalized,
+                        histogram, this::normalize));
                 threads[i] = thread;
 
                 thread.start();
@@ -358,107 +362,6 @@ public class HOGImage {
         }
 
         return calculateFeatureVector(normalized);
-    }
-
-    /**
-     * Thread job used to calculate a feature vector.
-     *
-     * @param queue containing indexes of image parts to calculate.
-     * @param featureVectors array used to store calculated feature vectors.
-     * @param parallel used to toggle {@link #calculateWindow(int, boolean)} parallelization.
-     */
-    private void windowThread(BlockingQueue<Integer> queue, float[][] featureVectors, boolean parallel) {
-        while (true) {
-            int index;
-
-            try {
-                index = queue.take();
-            } catch (InterruptedException exc) {
-                continue;
-            }
-
-            if (index == -1) {
-                break;
-            }
-
-            featureVectors[index] = calculateWindow(index, parallel);
-        }
-    }
-
-    /**
-     * Thread job used to calculate histograms.
-     *
-     * @param queue containing offset indexes.
-     * @param index defines index of the image whose histogram is being calculated.
-     * @param target array used to store normalized blocks.
-     */
-    private void histogramThread(BlockingQueue<Integer> queue, int index, float[][] target) {
-        while (true) {
-            int currentIndex;
-
-            try {
-                currentIndex = queue.take();
-            } catch (InterruptedException exc) {
-                continue;
-            }
-
-            if (currentIndex == -1) {
-                break;
-            }
-
-            target[currentIndex] = calculateHistogram(currentIndex, index);
-        }
-    }
-
-    /**
-     * Thread job used to normalize blocks.
-     *
-     * @param queue containing block indexes.
-     * @param target array used to store normalized blocks.
-     * @param source array containing calculated histograms.
-     */
-    private void normalizationThread(BlockingQueue<Integer> queue, float[][] target, float[][] source) {
-        while (true) {
-            int currentIndex;
-
-            try {
-                currentIndex = queue.take();
-            } catch (InterruptedException exc) {
-                continue;
-            }
-
-            if (currentIndex == -1) {
-                break;
-            }
-
-            target[currentIndex] = normalize(currentIndex, source);
-        }
-    }
-
-    /**
-     * Thread job used to calculate histogram data.
-     *
-     * @param queue containing the indexes of histogram positions.
-     * @param function used for calculation.
-     * @param target array used to store calculated data.
-     */
-    private void calculationThread(BlockingQueue<Integer> queue, Function<Integer, float[]> function,
-                                   float[][] target) {
-        while (true) {
-            int index;
-
-            try {
-                index = queue.take();
-            } catch (InterruptedException exc) {
-                continue;
-            }
-
-            if (index == -1) {
-                break;
-            }
-
-            target[index] = function.apply(index);
-        }
     }
 
     /**
