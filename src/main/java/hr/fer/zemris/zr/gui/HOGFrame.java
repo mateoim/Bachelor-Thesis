@@ -159,8 +159,11 @@ public class HOGFrame extends JFrame {
 
         train.addActionListener(e -> {
             train.setEnabled(false);
-            trainModel();
-            window.setEnabled(true);
+            if (!trainModel()) {
+                train.setEnabled(true);
+            } else {
+                window.setEnabled(true);
+            }
         });
 
         window.addActionListener(e -> slidingWindow());
@@ -391,14 +394,17 @@ public class HOGFrame extends JFrame {
 
     /**
      * Used to initialize {@link #model} training.
+     *
+     * @return {@code true} if the model was trained successfully,
+     *         otherwise {@code false}.
      */
-    private void trainModel() {
+    private boolean trainModel() {
         final JFileChooser jfc = new JFileChooser();
         jfc.setDialogTitle("Select folder with training examples");
         jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         if (jfc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
+            return false;
         }
 
         final Path src = jfc.getSelectedFile().toPath();
@@ -414,18 +420,19 @@ public class HOGFrame extends JFrame {
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.ERROR_MESSAGE,
                     null, null, null);
-            return;
+            return false;
         }
 
         final float[][] positiveVectors = calculateSubset(positive, true);
 
-        if (positiveVectors == null) return;
+        if (positiveVectors == null) return false;
 
         final float[][] negativeVectors = calculateSubset(negative, false);
 
-        if (negativeVectors == null) return;
+        if (negativeVectors == null) return false;
 
         trainSVM(positiveVectors, negativeVectors);
+        return true;
     }
 
     /**
