@@ -330,7 +330,13 @@ public class HOGFrame extends JFrame {
                 Mat toPredict = new Mat(1, vector.length, CvType.CV_32FC1);
                 toPredict.put(0, 0, vector);
 
-                if (model.predict(toPredict) == 1 && outerCounter == 0) {
+                final float prediction = model.predict(toPredict);
+
+                if (prediction == 1) {
+                    System.out.println("found");
+                }
+
+                if (prediction == 1 && outerCounter == 0) {
                     list.add(outerCounter);
                     list.add(counter);
                 }
@@ -435,7 +441,7 @@ public class HOGFrame extends JFrame {
      * @return an {@code array} containing calculated feature vectors.
      */
     private float[][] calculateSubset(Path path, boolean positive) {
-        final ImageVisitor visitor = new ImageVisitor();
+        final ImageVisitor visitor = new ImageVisitor(positive);
 
         try {
             Files.walkFileTree(path, visitor);
@@ -454,9 +460,8 @@ public class HOGFrame extends JFrame {
         final int processors = Runtime.getRuntime().availableProcessors();
         final int size = queue.size() - processors;
 
-        final float[][] vectors = new float[size][];
-
-        final BlockingQueue<float[]> calculatedVectors = new ArrayBlockingQueue<>(size);
+        final BlockingQueue<float[]> calculatedVectors = new ArrayBlockingQueue<>(size *
+                (positive ? 1 : ThreadsJobs.NUMBER_OF_SAMPLES));
 
         final Thread[] threads = new Thread[processors];
 
@@ -476,6 +481,8 @@ public class HOGFrame extends JFrame {
 
         Algorithms.joinThreads(threads);
 
+        final float[][] vectors = new float[calculatedVectors.size()][];
+
         int index = 0;
 
         for (float[] vector : calculatedVectors) {
@@ -490,6 +497,8 @@ public class HOGFrame extends JFrame {
      */
     private static class ImageVisitor implements FileVisitor<Path> {
 
+        private final boolean positive;
+
         /**
          * Keeps read images.
          */
@@ -499,6 +508,10 @@ public class HOGFrame extends JFrame {
          * Element used to stop threads.
          */
         private final BufferedImage killElement = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+
+        public ImageVisitor(boolean positive) {
+            this.positive = positive;
+        }
 
         /**
          * Creates a {@link BlockingQueue} containing read images and kill elements corresponding to
@@ -531,6 +544,12 @@ public class HOGFrame extends JFrame {
             BufferedImage image = ImageIO.read(file.toFile());
 
             if (image != null) {
+                final int width = image.getWidth();
+                if (positive && width != DEFAULT_WIDTH) {
+                    final Mat mat = Imgcodecs.imread(file.toString());
+                    image = Algorithms.scaleImage(mat, width / (double) DEFAULT_WIDTH, image.getType());
+                }
+
                 images.add(image);
             }
 

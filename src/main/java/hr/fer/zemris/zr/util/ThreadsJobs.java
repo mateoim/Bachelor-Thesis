@@ -29,11 +29,6 @@ public class ThreadsJobs {
     private static final int DEFAULT_HEIGHT = 128;
 
     /**
-     * Offset used in positive examples.
-     */
-    private static final int POSITIVE_OFFSET = 3;
-
-    /**
      * Step size used in {@link HOGImage#slideWindow(boolean, boolean)}.
      */
     private static final int STEP_SIZE = 5;
@@ -41,7 +36,7 @@ public class ThreadsJobs {
     /**
      * Number of samples per image used for {@link #negativeCalculationJob(BufferedImage, ThreadLocalRandom)}.
      */
-    private static final int NUMBER_OF_SAMPLES = 10;
+    public static final int NUMBER_OF_SAMPLES = 10;
 
     /**
      * Don't let anyone instantiate this class.
@@ -70,6 +65,10 @@ public class ThreadsJobs {
                 break;
             }
 
+            if (image.getHeight() != DEFAULT_HEIGHT || image.getWidth() != DEFAULT_WIDTH) {
+                continue;
+            }
+
             targetQueue.offer(positiveCalculationJob(image));
         }
     }
@@ -94,22 +93,7 @@ public class ThreadsJobs {
         final float[] magnitude = Algorithms.calculateMagnitude(dx, dy);
         final float[] angle = Algorithms.calculateAngle(dx, dy);
 
-        final float[] scaledMagnitude = new float[DEFAULT_HEIGHT * DEFAULT_WIDTH * pixelCount];
-        final float[] scaledAngle = new float[DEFAULT_HEIGHT * DEFAULT_WIDTH * pixelCount];
-        int index = 0;
-
-        for (int i = POSITIVE_OFFSET, size = DEFAULT_HEIGHT + POSITIVE_OFFSET; i < size; i++) {
-            int offset = i * width * pixelCount + POSITIVE_OFFSET * pixelCount;
-
-            for (int j = 0; j < DEFAULT_WIDTH; j++) {
-                for (int k = 0; k < pixelCount; k++) {
-                    scaledMagnitude[index] = magnitude[offset];
-                    scaledAngle[index++] = angle[offset++];
-                }
-            }
-        }
-
-        HOGImage hogImage = new HOGImage(scaledMagnitude, scaledAngle, DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelCount);
+        HOGImage hogImage = new HOGImage(magnitude, angle, DEFAULT_WIDTH, DEFAULT_HEIGHT, pixelCount);
         return hogImage.calculateWindow(0, false);
     }
 
