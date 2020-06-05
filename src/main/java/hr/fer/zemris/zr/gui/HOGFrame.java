@@ -294,7 +294,20 @@ public class HOGFrame extends JFrame {
         }
 
         final HOGImage image = new HOGImage(loadedImage);
-        final float[] featureVector = image.calculateFeatureVector();
+        final float[] featureVector;
+
+        try {
+            featureVector = image.calculateFeatureVector();
+        } catch (UnsupportedOperationException exc) {
+            JOptionPane.showOptionDialog(
+                    this,
+                    "Only available for images with width 64 and height 128.",
+                    "Error",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null, null, null);
+            return;
+        }
 
         imageLabel.setIcon(new HOGIcon(featureVector, loadedImage));
     }
