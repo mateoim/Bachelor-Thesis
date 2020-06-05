@@ -272,7 +272,7 @@ public class Algorithms {
         Mat nextImage = image;
 
         while (height / factor > minHeight && width / factor > minWidth) {
-            nextImage = scaleImage(nextImage, factor);
+            nextImage = scaleMat(nextImage, factor);
             height = nextImage.height();
             width = nextImage.width();
 
@@ -283,6 +283,21 @@ public class Algorithms {
     }
 
     /**
+     * Scales the given {@link Mat} by {@code factor} and converts it to a {@link BufferedImage}.
+     *
+     * @param image original image in {@link Mat} format.
+     * @param factor used to scale the image.
+     * @param colorType used by the original image.
+     *
+     * @return a new scaled {@link BufferedImage}.
+     */
+    public static BufferedImage scaleImage(Mat image, double factor, int colorType) {
+        final Mat scaled = scaleMat(image, factor);
+        final float[] data = convertData(scaled);
+        return convertToImage(data, scaled.width(), scaled.height(), colorType);
+    }
+
+    /**
      * Scales the given image using the given factor.
      *
      * @param image to be scaled.
@@ -290,7 +305,7 @@ public class Algorithms {
      *
      * @return scaled image.
      */
-    private static Mat scaleImage(Mat image, double factor) {
+    private static Mat scaleMat(Mat image, double factor) {
         Mat resized = new Mat();
         Imgproc.resize(image, resized, new Size(image.width() / factor, image.height() / factor));
         return resized;
@@ -303,7 +318,27 @@ public class Algorithms {
      *
      * @return resulting {@link HOGImage}.
      */
-    private static HOGImage toHOGImage(Mat original){
+    private static HOGImage toHOGImage(Mat original) {
+        final int width = original.width();
+        final int height = original.height();
+        final int bytesPerPixel = original.channels();
+
+        float[] pixels = convertData(original);
+
+        float[] dx = derive(pixels, 'x', width, height, bytesPerPixel, true);
+        float[] dy = derive(pixels, 'y', width, height, bytesPerPixel, true);
+
+        return new HOGImage(calculateMagnitude(dx, dy), calculateAngle(dx, dy), width, height, bytesPerPixel);
+    }
+
+    /**
+     * Converts {@link Mat} data to a {@code float array}.
+     *
+     * @param original {@link Mat} containing image data.
+     *
+     * @return a new {@code float array} containing data from the {@code original} {@link Mat}.
+     */
+    private static float[] convertData(Mat original) {
         final int width = original.width();
         final int height = original.height();
         final int bytesPerPixel = original.channels();
@@ -322,10 +357,7 @@ public class Algorithms {
             }
         }
 
-        float[] dx = derive(pixels, 'x', width, height, bytesPerPixel, true);
-        float[] dy = derive(pixels, 'y', width, height, bytesPerPixel, true);
-
-        return new HOGImage(calculateMagnitude(dx, dy), calculateAngle(dx, dy), width, height, bytesPerPixel);
+        return pixels;
     }
 
     /**
