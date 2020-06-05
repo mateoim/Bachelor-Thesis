@@ -69,6 +69,16 @@ public class HOGFrame extends JFrame {
     private final SVM model = SVM.create();
 
     /**
+     * Keeps {@link DetectionIcon}s for all levels.
+     */
+    private final List<DetectionIcon> detectionList = new ArrayList<>();
+
+    /**
+     * Keeps track of the current index in {@link #detectionList}.
+     */
+    private int currentIndex = 0;
+
+    /**
      * Used to display {@link #loadedImage}.
      */
     private final JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
@@ -126,10 +136,10 @@ public class HOGFrame extends JFrame {
         buttonPanel.add(dx);
         buttonPanel.add(dy);
 
-        final JButton magnitude = new JButton("magnitude");
+        final JButton magnitude = new JButton("Magnitude");
         magnitude.addActionListener((l) -> calculateMagnitude());
 
-        final JButton angle = new JButton("angle");
+        final JButton angle = new JButton("Angle");
         angle.addActionListener((l) -> calculateAngle());
 
         buttonPanel.add(magnitude);
@@ -143,7 +153,7 @@ public class HOGFrame extends JFrame {
         final JButton train = new JButton("Train model");
         buttonPanel.add(train);
 
-        final JButton window = new JButton("Sliding window");
+        final JButton window = new JButton("Run detection");
         buttonPanel.add(window);
         window.setEnabled(false);
 
@@ -161,6 +171,24 @@ public class HOGFrame extends JFrame {
 
         checkboxPanel.add(parallelCheckbox);
         checkboxPanel.add(parallelChildrenCheckbox);
+
+        final JButton previous = new JButton("Previous");
+        buttonPanel.add(previous);
+
+        previous.addActionListener(l -> {
+            if (detectionList.isEmpty()) return;
+            currentIndex = Math.max(0, currentIndex - 1);
+            imageLabel.setIcon(detectionList.get(currentIndex));
+        });
+
+        final JButton next = new JButton("Next");
+        buttonPanel.add(next);
+
+        next.addActionListener(l -> {
+            if (detectionList.isEmpty()) return;
+            currentIndex = Math.min(detectionList.size() - 1, currentIndex + 1);
+            imageLabel.setIcon(detectionList.get(currentIndex));
+        });
 
         initMenuBar();
 
@@ -203,6 +231,8 @@ public class HOGFrame extends JFrame {
             imageLabel.setIcon(new ImageIcon(loadedImage));
             pack();
             image = Imgcodecs.imread(src.toString());
+            currentIndex = 0;
+            detectionList.clear();
         } catch (IOException | NullPointerException exc) {
             JOptionPane.showOptionDialog(
                     this,
@@ -320,8 +350,8 @@ public class HOGFrame extends JFrame {
             return;
         }
 
-        long startTime = System.nanoTime();
-
+        detectionList.clear();
+        currentIndex = 0;
         List<HOGImage> pyramid = Algorithms.createPyramid(image, SCALING_FACTOR, DEFAULT_HEIGHT, DEFAULT_WIDTH);
 
         float[][][] featureVectors = new float[pyramid.size()][][];
@@ -333,36 +363,30 @@ public class HOGFrame extends JFrame {
                     parallelChildrenCheckbox.isSelected());
         }
 
-        List<Integer> list = new ArrayList<>();
-        int outerCounter = 0;
+        List<Integer> list;
+        BufferedImage currentImage = loadedImage;
+        Mat currentMat = image;
         int counter;
+        final int colorType = loadedImage.getType();
 
         for (float[][] image : featureVectors) {
             counter = 0;
+            list = new LinkedList<>();
             for (float[] vector : image) {
                 Mat toPredict = new Mat(1, vector.length, CvType.CV_32FC1);
                 toPredict.put(0, 0, vector);
 
-                final float prediction = model.predict(toPredict);
-
-                if (prediction == 1) {
-                    System.out.println("found");
-                }
-
-                if (prediction == 1 && outerCounter == 0) {
-                    list.add(outerCounter);
+                if (model.predict(toPredict) == 1) {
                     list.add(counter);
                 }
                 counter++;
             }
-            outerCounter++;
+            detectionList.add(new DetectionIcon(list, currentImage));
+            currentMat = Algorithms.scaleMat(currentMat, SCALING_FACTOR);
+            currentImage = Algorithms.toBufferedImage(currentMat, colorType);
         }
 
-        long endTime = System.nanoTime();
-
-        System.out.println((endTime - startTime) / 1_000_000_000d);
-
-        imageLabel.setIcon(new DetectionIcon(list, loadedImage));
+        imageLabel.setIcon(detectionList.get(currentIndex));
     }
 
     /**

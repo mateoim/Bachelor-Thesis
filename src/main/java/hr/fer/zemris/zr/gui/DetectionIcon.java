@@ -96,24 +96,19 @@ public class DetectionIcon extends ImageIcon {
         final int width = getIconWidth();
         final Line2D[] lines = new Line2D[4];
 
-        for (int i = 0, size = indexes.size(); i < size; i += 2) {
-            final double scale = Math.max(indexes.get(i) * DEFAULT_SCALE, 1);
-            final int index = indexes.get(i + 1);
-
+        for (int index : indexes) {
             final int windowRow = (width - DEFAULT_WIDTH + STEP_SIZE) / STEP_SIZE;
             final int rowOffset = index / windowRow * STEP_SIZE;
             final int columnOffset = index % windowRow * STEP_SIZE;
 
-            lines[0] = new Line2D.Double(columnOffset * scale + x, rowOffset * scale + y,
-                    columnOffset * scale + x, rowOffset * scale + DEFAULT_HEIGHT + y);
-            lines[1] = new Line2D.Double(columnOffset * scale + x, rowOffset * scale + y,
-                    columnOffset * scale + DEFAULT_WIDTH + x, rowOffset * scale + y);
-            lines[2] = new Line2D.Double(columnOffset * scale + DEFAULT_WIDTH + x,
-                    rowOffset * scale + DEFAULT_HEIGHT + y, columnOffset * scale + x,
-                    rowOffset * scale + DEFAULT_HEIGHT + y);
-            lines[3] = new Line2D.Double(columnOffset * scale + DEFAULT_WIDTH + x,
-                    rowOffset * scale + DEFAULT_HEIGHT + y, columnOffset * scale + DEFAULT_WIDTH + x,
-                    rowOffset * scale + y);
+            lines[0] = new Line2D.Double(columnOffset + x, rowOffset + y,
+                    columnOffset + x, rowOffset + DEFAULT_HEIGHT + y);
+            lines[1] = new Line2D.Double(columnOffset + x, rowOffset + y,
+                    columnOffset + DEFAULT_WIDTH + x, rowOffset + y);
+            lines[2] = new Line2D.Double(columnOffset + DEFAULT_WIDTH + x, rowOffset + DEFAULT_HEIGHT + y,
+                    columnOffset + x, rowOffset + DEFAULT_HEIGHT + y);
+            lines[3] = new Line2D.Double(columnOffset + DEFAULT_WIDTH + x, rowOffset + DEFAULT_HEIGHT + y,
+                    columnOffset + DEFAULT_WIDTH + x, rowOffset + y);
 
             for (Line2D line : lines) {
                 g2d.draw(line);

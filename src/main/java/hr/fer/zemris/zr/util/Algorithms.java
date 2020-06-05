@@ -292,9 +292,20 @@ public class Algorithms {
      * @return a new scaled {@link BufferedImage}.
      */
     public static BufferedImage scaleImage(Mat image, double factor, int colorType) {
-        final Mat scaled = scaleMat(image, factor);
-        final float[] data = convertData(scaled);
-        return convertToImage(data, scaled.width(), scaled.height(), colorType);
+        return toBufferedImage(scaleMat(image, factor), colorType);
+    }
+
+    /**
+     * Converts the given {@link Mat} to a {@link BufferedImage}.
+     *
+     * @param image being converted.
+     * @param colorType used by the resulting {@link BufferedImage}.
+     *
+     * @return {@link BufferedImage} generated from {@code image} data.
+     */
+    public static BufferedImage toBufferedImage(Mat image, int colorType) {
+        final float[] data = convertData(image);
+        return convertToImage(data, image.width(), image.height(), colorType);
     }
 
     /**
@@ -305,7 +316,7 @@ public class Algorithms {
      *
      * @return scaled image.
      */
-    private static Mat scaleMat(Mat image, double factor) {
+    public static Mat scaleMat(Mat image, double factor) {
         Mat resized = new Mat();
         Imgproc.resize(image, resized, new Size(image.width() / factor, image.height() / factor));
         return resized;
