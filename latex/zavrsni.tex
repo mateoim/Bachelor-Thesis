@@ -1,5 +1,6 @@
 \documentclass[times, utf8, zavrsni]{fer}
 \usepackage{booktabs}
+\usepackage[hyphenbreaks]{breakurl}
 
 \begin{document}
 
@@ -24,6 +25,26 @@ Cilj ovog rada je ostvariti višedretvenu izvedbu algoritma računanja opisnika 
 Osnovni pojmovi, provlemi i prednosti višedretvenosti detaljnije se objašnjeni u drugom poglavlju. Treće poglavlje opisuje postupak računanja histograma orijentacija gradijenata u slikama. Opis detekcije objekata kao i model koji se koristi u te svrhe opisani su u četvrtom poglavlju. Peto poglavlje opisuje implementaciju programskog rješenja dok šesto analizira rezultate i performanse implementacije. Na kraju se nalazi zaključak te je dan popis korištene literature kao i sažetak na hrvatskom i negleskom jeziku.
 
 \chapter{Višedretvena paralelizacija}
+Gotovo sva računala danas koriste višejezgrene procesore što omogućava paralelno izvođenje više dretvi i tako je moguće postiči značajno ubrzanje izvođenja nekog posla, ako za taj posao nije potrebno pisati rezultate u zajedničke varijable. Upravo se taj pristup koristi kako bi se ostvarial paralelizacija u ovom radu.
+
+\section{Dretva}
+Dretva je definirana kao niz instrukcija koje slijedno izvodi jezgra procesora. Svaka dretva ima svoje resurse koje može koristiti. Računalo može pokrenuti više dretvi nego što ima dostupnih jezgri procesora, no broj jezgri ograničava maksimalan broj dretvi koji se može izvoditi paralelno. Ako je istovremeno pokrenuto više dretvi nego što je dostupno jezgri procesora one će se i dalje sve izvoditi, ali ne uvijek istovremeno već će se izmjenjivati što dovodi do čestoih promjena konteksta \citep{os}.
+
+\section{Promjene konteksta}
+Promjena konteksta \engl{context switching} nastupa kada dolazi do promjene aktivne dretve. Kao što je već rečeno svaka dretva koristi svoje resurse i u aktivnom stanju raspolaže registrima na procesoru. Kada dretva prestaje biti aktivna, ali još nije obavila cijeli posao, potrebno je u memoriju spremiti trenutni kontekst te dretve kako bi se mogao ponovno koristiti kada dretva postane aktivna. Nakon toga je potrebno učitati kontekst dretve koja sada postaje aktivna. Te operacije imaju određeno trajanje te nije poželjno raditi promjenu konteksta češće nego što je to potrebno, odnosno nije poželjno paliti više dretvi istovremeno ako ih nije moguće paralelno izvoditi jer se tako smanjuje efikasnost obavljanja posla \citep{os}. Slika~\ref{fig:contextSwitching} prikazuje promjenu konteksta gdje dretva \textit{thread1} prestaje biti aktivna, a dretva \textit{thread2} postaje aktivna.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/contextSwitching.png}
+	\caption{Promjena konteksta\protect\footnotemark}
+	\label{fig:contextSwitching}
+\end{figure}
+
+\def\UrlBreaks{\do\/\do-}
+\footnotetext{Izvor: \burl{https://developpaper.com/understanding-system-structure-from-java-perspective-1-cpu-context-switch/}}
+
+\section{Kritični odsječak}
+Dretve mogu koristiti neke zajedničke resurse. Moguće je istovremeno čitanje zajedničkih resursa, no ako je potrebno promijeniti vrijednost neke varijable moguće je da dvije ili više dretvi to pokušaju učiniti istovremeno. Kako se promjena jedne dretve nebi izgubila istovremenim pisanjem druge dretve potrebno je osigurati da samo jedna dretva u bilo kojem trenutku može modificirati tu vrijednost. Dio posla koji smije obavljati samo jedna dretva u bilo kojem trenutku naziva se kritični odsječak \engl{critical section}. Kako bi se kritični odsječak zaštitio koriste se sinkronizacijski mehanizmi. U ovom radu korištene su blokirajuće strukture podataka. Kada dretva pokuša koristiti blokirajuću strukturu podataka koju već koristi neka druga dretva ona postaje blokirana, odnosno mora čekati da prva dretva prestane koristiti tu strukturu podataka i tek tada može nastaviti svoje izvođenje \citep{os}.
 
 \chapter{Algoritam računanja histograma orijentacija gradijenata u slikama}
 
