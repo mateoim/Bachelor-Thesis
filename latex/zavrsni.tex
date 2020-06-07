@@ -123,7 +123,7 @@ U formuli \ref{eq:width} \(B\) predstavlja broj stupaca \citep{tomasi2012histogr
  	\label{eq:voteNext}
 \end{equation}
 
-Zbroj vrijednosti iz formula \ref{eq:vote} i \ref{eq:voteNext} mora biti \(\mu\) jer piksel vrijednosti stupca doprinosi cijelom svojom magnitudom \citep{tomasi2012histograms}. Slika~\ref{fig:vote} prikazuje podjelu doprinosa magnitude \(\mu \) uz kut od 77\degree i devet stupaca po čeliji.
+Zbroj vrijednosti iz formula \ref{eq:vote} i \ref{eq:voteNext} mora biti \(\mu\) jer piksel vrijednosti stupca doprinosi cijelom svojom magnitudom \citep{tomasi2012histograms}. Slika~\ref{fig:vote} prikazuje podjelu doprinosa magnitude \(\mu \) uz kut od 77\degree i devet stupaca po čeliji. Doprinos stupcu histograma može biti sama vrijednost magnitude, ali može biti i neka druga vrijednost kao kvadrat ili korijen magnitude. U radu \cite{dalal2005histograms} ustanovilo se da se u praksi najbolji rezultati dobiju ako se koristi vrijednost magnitude te je zato ta vrijednost korištena i u ovom radu.
 
 \begin{figure}[htb]
 	\centering
@@ -135,6 +135,16 @@ Zbroj vrijednosti iz formula \ref{eq:vote} i \ref{eq:voteNext} mora biti \(\mu\)
 \footnotetext{Izvor: \citep{tomasi2012histograms}}
 
 \section{Normalizacija blokova}
+Lokalno osvjetljenje i kontrast mogu znatno utjecati na magnitudu gradijenta. Iz tog razloga vrlo je važno normalizirati blokove susjednih čelija. Odabrani su blokovi širine 4 i visine 4 čelije. U radu \cite{dalal2005histograms} ustanovljeno je da preklapanje blokova na pola bloka pozitvino utjeće na preciznost detekcije tako da je u ovom radu za pomak bloka korištena jedna čelija. Vrijednosti u bloku zapisane u obliku vektora normiraju se formulom:
+
+\begin{equation}
+	v = \frac{v}{\sqrt{\left\|v\right\|^2 + \epsilon}}
+	\label{eq:norm}
+\end{equation}
+
+Vrijednost $\epsilon$ u formuli \ref{eq:norm} predstavlja malu pozitivnu konstantu kako bi se izbjeglo potencijalno dijeljenje s nulom \citep{tomasi2012histograms}.
+
+\section{Normalizacija opisnika}
 
 \chapter{Detekcija pješaka}
 
