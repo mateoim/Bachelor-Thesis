@@ -82,7 +82,59 @@ U formulama \ref{eq:dx} i \ref{eq:dy} \(r\) predstavlja redak slike, a \(c\) pre
 \label{eq:ang}
 \end{equation}
 
-Kod detekcije pješaka u radu \cite{dalal2005histograms} pokazalo se najbolje koristiti kuteve između 0\degree i 180\degree, odnosno kutevi bez orijentacije, no za neke druge probleme kao što je detekcija automobila pokazalo se bolje koristiti kuteve do 360\degree \citep{dalal2005histograms}.
+Kod detekcije pješaka u radu \cite{dalal2005histograms} pokazalo se najbolje koristiti kuteve između 0\degree i 180\degree, odnosno kutevi bez orijentacije, no za neke druge probleme kao što je detekcija automobila pokazalo se bolje koristiti kuteve do 360\degree \citep{dalal2005histograms}. U originalnom radu za doprinos magnitude koristi se magnituda kanala koji ima najveću magnitudu, no u ovom radu koristi se doprinos magnituda svih kanala.
+
+\section{Izračun histograma}
+Za izračun histograma prvo treba sliku podijeliti u kvadratne ili kružne čelije koje se međusobno ne preklapaju. U ovom radu se koriste kvadratne čelije širine 8 piksela i visine 8 piksela. Slika~\ref{fig:hogCells} prikazuje uvećanu sliku dimenzija 64 na 128 piksela podijeljenu u čelije dimenzija 8 na 8 piksela.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.3\linewidth]{figures/hog-cells.png}
+	\caption{Slika podijeljena u čelije\protect\footnotemark}
+	\label{fig:hogCells}
+\end{figure}
+
+\footnotetext{Izvor: \burl{https://www.learnopencv.com/histogram-of-oriented-gradients/}}
+
+
+Za svaku čeliju zatim se računa histogram orijentacije gradijenata. U radu \citep{dalal2005histograms} pokazalo se da za detekciju pješaka preciznost rase s povećanjem broja stupaca po histogramu do broja 9 te se zato i u ovom radu koristi upravo devet stupaca. Raspon svakog stupca definiran je formulom:
+
+\begin{equation}
+	w = \frac{180}{B}
+	\label{eq:width}
+\end{equation}
+
+U formuli \ref{eq:width} \(B\) predstavlja broj stupaca \citep{tomasi2012histograms}. Potrebno je izračunati doprinos magnitude za svaki piksel unutar pojedine čelije. Za izračun doprinosa potrebno jedefinirati sredinu raspona pojedinog stupca formulom:
+
+\begin{equation}
+	c_i = w(i + \frac{1}{2})
+	\label{eq:center}
+\end{equation}
+
+ U formuli \ref{eq:center} \(w\) predstavlja širinu stupca, a \(i\) indeks stupca. Piksel svojom magnitudom doprinosi stupcu kojem pripada po some kutu i slijedećem stupcu ovisno o udaljenosti kuta od središta stupca kojem pripada, a to je prikazano formulama: 
+ 
+ \begin{equation}
+	v_{j} = \mu \frac{c_{j + 1} - \theta}{w}
+ 	\label{eq:vote}
+ \end{equation}
+ 
+ \begin{equation}
+ 	v_{j+1} = \mu \frac{\theta - c_j}{w}
+ 	\label{eq:voteNext}
+\end{equation}
+
+Zbroj vrijednosti iz formula \ref{eq:vote} i \ref{eq:voteNext} mora biti \(\mu\) jer piksel vrijednosti stupca doprinosi cijelom svojom magnitudom \citep{tomasi2012histograms}. Slika~\ref{fig:vote} prikazuje podjelu doprinosa magnitude \(\mu \) uz kut od 77\degree i devet stupaca po čeliji.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/vote.png}
+	\caption{Slika podijeljena u čelije\protect\footnotemark}
+	\label{fig:vote}
+\end{figure}
+
+\footnotetext{Izvor: \citep{tomasi2012histograms}}
+
+\section{Normalizacija blokova}
 
 \chapter{Detekcija pješaka}
 
