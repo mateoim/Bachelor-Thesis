@@ -145,6 +145,14 @@ Lokalno osvjetljenje i kontrast mogu znatno utjecati na magnitudu gradijenta. Iz
 Vrijednost $\epsilon$ u formuli \ref{eq:norm} predstavlja malu pozitivnu konstantu kako bi se izbjeglo potencijalno dijeljenje s nulom \citep{tomasi2012histograms}.
 
 \section{Normalizacija opisnika}
+Nakon što su blokovi normalizirani potrebno je sve vrijednosti zapisati kao jedan vektor te taj vektor ponovno normalizirati formulom \ref{eq:norm}. Sada u formuli \ref{eq:norm} \(v\) predstavlja novonastali vektor, a $\epsilon$ ponovno malu pozitivnu konstantu. Još može biti poželjno ograničiti maksimalnu vrijednost $\tau$ kako velike magnitude gradijenta nebi prikrile detalje. Ovo ograničavanje obavlja se po formuli:
+
+\begin{equation}
+	v_n = \min(v_n, \tau)
+	\label{eq:limit}
+\end{equation}
+
+Nakon toga dobiven vektor još se jednom normalizira. Tako izračunati vektor predstavlja opisnik slike. Ovime je slika dimenzija 64 na 128 piksela sažeta na opisnik koji sadrži 15 horizontalnih i 7 vertikalnih blokova koji svaki sadrži po 4 čelije odnosno histograma s 9 stupaca. Dakle slika koja ukupno ima 8196 piksela od kojih svaki može sadržavati informacije o četiri kanala sažeta je u jedan opisnik kosi ima samo 3780 vrijednosti neovisno o broju kanala \citep{tomasi2012histograms}. Takvi opisnici mogu se koristiti kako bi se naučili modeli za klasifikaciju te kasnije i za samu klasifikaciju odnosno detekciju ima li slika traženi objekt.
 
 \chapter{Detekcija pješaka}
 
