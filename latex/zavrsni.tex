@@ -1,6 +1,7 @@
 \documentclass[times, utf8, zavrsni]{fer}
 \usepackage{booktabs}
 \usepackage[hyphenbreaks]{breakurl}
+\usepackage{gensymb}
 
 \begin{document}
 
@@ -47,6 +48,41 @@ Promjena konteksta \engl{context switching} nastupa kada dolazi do promjene akti
 Dretve mogu koristiti neke zajedničke resurse. Moguće je istovremeno čitanje zajedničkih resursa, no ako je potrebno promijeniti vrijednost neke varijable moguće je da dvije ili više dretvi to pokušaju učiniti istovremeno. Kako se promjena jedne dretve nebi izgubila istovremenim pisanjem druge dretve potrebno je osigurati da samo jedna dretva u bilo kojem trenutku može modificirati tu vrijednost. Dio posla koji smije obavljati samo jedna dretva u bilo kojem trenutku naziva se kritični odsječak \engl{critical section}. Kako bi se kritični odsječak zaštitio koriste se sinkronizacijski mehanizmi. U ovom radu korištene su blokirajuće strukture podataka. Kada dretva pokuša koristiti blokirajuću strukturu podataka koju već koristi neka druga dretva ona postaje blokirana, odnosno mora čekati da prva dretva prestane koristiti tu strukturu podataka i tek tada može nastaviti svoje izvođenje \citep{os}.
 
 \chapter{Algoritam računanja histograma orijentacija gradijenata u slikama}
+Algoritam računanja histograma orijentacija gradijenata \engl{histogram of oriented gradients} koristi se kako bi se za sliku izračunao njezin opisnik koji sadrži sažete, korisne informacije o toj slici. Dobiveni opisnik može se proslijediti nekom naučenom klasifikatoru koji na temelju njega može odrediti sadrži li slika (ili obrađeni dio slike) traženi objekt. Izračun opisnika se provodi na dijelu slike određene veličine, a točne dimenzije dijela slike koji se koristi ovise o traženom objektu. Glavna ideja je da se traženi objekt može prepoznati pomoću njegovih bridova i orijentacije tih bridova te se zato koristi gradijent.
+
+\section{Izračun gradijenta}
+Prije samog izračuna gradijenta moguće je normalizirati boje i gama vrijednosti, ali kako je u originalnom radu \citep{dalal2005histograms} pokazano da to ne utječe značajno na rezultate zbog kasnije normalizacije opisnika, u ovom radu je taj korak preskočen. Za izračun gradijenta sliku je potrebno filtrirati određenom maskom u smjeru \(x\)-osi i \(y\)-osi. U originalnom radu \citep{dalal2005histograms} isprobano je nekoliko tipova maski no najbolja se pokazala jednostavna 1-D centrirana maska koja se zato koristi i u ovom radu: 
+
+\begin{equation}
+	[-1, 0, 1]
+	\label{eq:mask}
+\end{equation}
+
+Uz korištenje maske u formuli \ref{eq:mask} za pojedini piksel \(I\) potrebno je izračunati derivaciju u smjeru \(x\) i \(y\)-osi prema formulama:
+
+\begin{equation}
+I_x(r, c) = I(r, c + 1) - I(r, c - 1)
+\label{eq:dx}
+\end{equation}
+
+\begin{equation}
+I_y(r, c) = I(r - 1, c) - I(r + 1, c)
+\label{eq:dy}
+\end{equation}
+
+U formulama \ref{eq:dx} i \ref{eq:dy} \(r\) predstavlja redak slike, a \(c\) predstavlja stupac slike \citep{tomasi2012histograms}. Ako slika sadrži više boja odnosno kanala, postupak se ponavlja za svaki kanal. Na temelju dobivenih derivacija potrebno je izračunati magnitudu i kut koji će se koristiti u kasnijim koracima:
+
+\begin{equation}
+\mu = \sqrt{I_x^2 + I_y^2}
+\label{eq:mag}
+\end{equation}
+
+\begin{equation}
+\theta = \frac{180}{\pi}(\tan_2^{-1}(I_y, I_x) \mod \pi)
+\label{eq:ang}
+\end{equation}
+
+Kod detekcije pješaka u radu \cite{dalal2005histograms} pokazalo se najbolje koristiti kuteve između 0\degree i 180\degree, odnosno kutevi bez orijentacije, no za neke druge probleme kao što je detekcija automobila pokazalo se bolje koristiti kuteve do 360\degree \citep{dalal2005histograms}.
 
 \chapter{Detekcija pješaka}
 
