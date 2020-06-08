@@ -221,6 +221,20 @@ Pritiskom na gumbe \textit{dx} ili \textit{dy} grafičkog sučelja pokreće se p
 \end{figure}
 
 \section{Izračun magnitude i kuta}
+Magnituda je izračunate po formuli \ref{eq:mag}, a kut po formuli \ref{eq:ang}. Kako su oboje relativno jednostavne operacije i ne ovise o pojedinom retku ili stupcu ovdje nije korištena nikakva paralelizacija. Vizualizacija je ponovno ostvarena metodom \verb|convertToImage()|. Pritiskom na gumb \textit{Magnitude} prikazuje se vizualizacija magnitude, a pritiskom na gumb \textit{Angle} prikazuje se vizualizacija kuta. Iako se na vizualizaciji kuta ne vidi ništa što  ljudskom oku izgleda smisleno, ona je ostavljena radi kompletnosti. Slika~\ref{fig:magnitude} prikazuje vizualizaciju magnitude slike korištene u slikama \ref{fig:dx} i \ref{fig:dy}.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.75\linewidth]{figures/magnitude.png}
+	\caption{Vizualizacija magnitude}
+	\label{fig:magnitude}
+\end{figure}
+
+\section{Izračun histograma}
+Za daljnu obradu slika koristi se razred \verb|HOGImage|. Razred ima dva konstruktora. U jednom prima objekt tipa \verb|BufferedImage| pomoću kojeg sam doznaje korisne informacije o slici i računa gradijent po prethodno opisanom postupku. Drugi konstruktor prima već izrčunatu magnitudu i kut te informacije o dimenzijama originalne slike. Razred definira dva očekivana načina korištenja ovisno o tome je li slika predviđenih dimenzija ili je potrebno koristiti klizni prozor. Ovdje je detaljnije objašnjen način rada kada se koristi slika predviđenih dimenzija. Kod korištenja kliznog prozora koristi se ista funkcionalnost koja je ovdje objašnjena, ali uz drugačije opcije paralelizacije radi veće efikasnosti. Vrijednosti histograma se računaju pozivom metode \verb|calculateHistogram()|. Metoda ne prima nikakve argumente već je sama po sebi paralelizirana. Slika dužine 64 i visine 128 piksela se podijeli u kvadratne čelije dimenzije 8 piksela. Svaka čelija predstavlja histogram s 9 stupaca, a svaki stupac pokriva širinu od 20\degree. U blokirajući red se stavljaju indeksi na temelju kojih se računa odmak do početnog elementa čelije koju taj indeks predstavlja. Zatim se dretvama predaje taj red te se one pokreću, a glavna dretva se blokira dok ostale ne završe s radom. Dretve prestaju s radom kada dobiju index \verb|-1|. Kako svaka dretva upisuje izračunati histogram u polje na lokaciju izvučenog indeksa, a zbog korištenja blokirajućeg reda nije moguće da dvije dretve izvuku isti indeks, kod zapisivanja histograma nije potrebno koristiti sinkronizacijski mehanizam. U dretvama se doprinos magnitude računa prema formulama \ref{eq:vote} i \ref{eq:voteNext}.
+
+\section{Normalizacija blokova}
+
 
 \chapter{Rezultati}
 
