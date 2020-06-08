@@ -330,7 +330,15 @@ public class HOGFrame extends JFrame {
         final float[] featureVector;
 
         try {
-            featureVector = image.calculateFeatureVector();
+            final float[][] histograms = image.calculateHistogram();
+            featureVector = new float[histograms.length * histograms[0].length];
+            int index = 0;
+
+            for (float[] histogram : histograms) {
+                for (float value : histogram) {
+                    featureVector[index++] = value;
+                }
+            }
         } catch (UnsupportedOperationException exc) {
             JOptionPane.showOptionDialog(
                     this,
