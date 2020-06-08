@@ -234,7 +234,22 @@ Magnituda je izračunate po formuli \ref{eq:mag}, a kut po formuli \ref{eq:ang}.
 Za daljnu obradu slika koristi se razred \verb|HOGImage|. Razred ima dva konstruktora. U jednom prima objekt tipa \verb|BufferedImage| pomoću kojeg sam doznaje korisne informacije o slici i računa gradijent po prethodno opisanom postupku. Drugi konstruktor prima već izrčunatu magnitudu i kut te informacije o dimenzijama originalne slike. Razred definira dva očekivana načina korištenja ovisno o tome je li slika predviđenih dimenzija ili je potrebno koristiti klizni prozor. Ovdje je detaljnije objašnjen način rada kada se koristi slika predviđenih dimenzija. Kod korištenja kliznog prozora koristi se ista funkcionalnost koja je ovdje objašnjena, ali uz drugačije opcije paralelizacije radi veće efikasnosti. Vrijednosti histograma se računaju pozivom metode \verb|calculateHistogram()|. Metoda ne prima nikakve argumente već je sama po sebi paralelizirana. Slika dužine 64 i visine 128 piksela se podijeli u kvadratne čelije dimenzije 8 piksela. Svaka čelija predstavlja histogram s 9 stupaca, a svaki stupac pokriva širinu od 20\degree. U blokirajući red se stavljaju indeksi na temelju kojih se računa odmak do početnog elementa čelije koju taj indeks predstavlja. Zatim se dretvama predaje taj red te se one pokreću, a glavna dretva se blokira dok ostale ne završe s radom. Dretve prestaju s radom kada dobiju index \verb|-1|. Kako svaka dretva upisuje izračunati histogram u polje na lokaciju izvučenog indeksa, a zbog korištenja blokirajućeg reda nije moguće da dvije dretve izvuku isti indeks, kod zapisivanja histograma nije potrebno koristiti sinkronizacijski mehanizam. U dretvama se doprinos magnitude računa prema formulama \ref{eq:vote} i \ref{eq:voteNext}.
 
 \section{Normalizacija blokova}
+Nakon izračunatih histograma potrebno je normalizirati blokove po formuli \ref{eq:norm}. Za slike širine 64 i visine 128 piksela to se računa metodom \verb|normalizeBlocks()|. Kao i kod računanja histograma metoda ne prima nikakve parametre, već se samo izvodi paralelno. Na sličan način blokovi su reprezentirani indeksima pomoću kojih si izračunava početni histogram bloka. Blokovi se normaliziraju paralelno te se rezultati zapisuju u novo polje. Kako se histogrami samo čitaju, a u polje s normaliziranim blokovima svaka dretva upisuje rezultat na svoj indeks, za te operacije nije potrebno ostvariti mehanizme sinkronizacije. Za parametar $\epsilon$ odabrana je vrijednost \(10^{-5}\).
 
+\section{Normalizacija opisnika}
+Zadnji korak u izračunu opisnika je normalizacija normaliziranih blokova zapisanih kao jedan vektor, ograničavanje maksimalne vrijednosti prema formuli \ref{eq:limit} te ponovna normalizacija dobivenog vektora. Kako je ovo relativno jednostavna operacija i za normalizaciju je potrebno sumirati sve vrijednosti vektora što bi kod paralelizacije predstavljalo kritični odsječak, ova operacija nije paralelizirana. Vrijednost parametra $\tau$ postavljena je na \(0.2\) kao i radu \cite{tomasi2012histograms}.
+
+\section{Vizualizacija rezultata}
+Ako je učitana slika širine 64 i visine 128 piksela pritiskom na gumb \textit{HOG visualization} preko slike se iscrtavaju normalizirane vrijednosti histograma. U svakoj čeliji iscrtane su crte duljine proporcionalne vrijednostima svog stupca histograma i zarotiran za kut koji predstavlja centar stupca. U takvoj vizualizaciji najdulje linije biti će okomite na prepoznate rubove. Vizualizacija pomaže da bi korisnik shvatio kako računalo "vidi" sliku. Za iscrtavanje slike koristi se razred \verb|HOGIcon| koji naslijeđuje Javin razred \verb|ImageIcon|. U konstruktoru prima polje koje sadrži vrijednosti histograma i pomoću afinih transformacija iscrtava linije okrenute za odgovarajući kut. Slika~\ref{fig:hog} prikazuje vizualizaciju histograma na slici iz seta za učenje.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/hogVisualization.png}
+	\caption{Vizualizacija histograma po čelijama}
+	\label{fig:hog}
+\end{figure}
+
+\section{Klizni prozor}
 
 \chapter{Rezultati}
 
