@@ -180,6 +180,47 @@ Slika na temelju koje se može izračunati ima unaprijed određene dimenzije. No
 Koncept kliznog prozora rješio je problem analize većih slika, no i dalje postoji mogućnost da je traženi objekt na trenutnoj slici veći od definiranih dimeznija dijela slike na temelju kojega se izračunava opisnik. Kada se koristi piramida slike prvo se analizira originalna slika, a zatim se ta slika smanjuje za neki definirani faktor te se na smanjenoj slici ponovno provodi analiza tehnikom kliznog prozora i izračunom opisnika za svaku poziciju. Postupak smanjivanja i analize smanjene slike se ponavlja dok samnjivenje slike nebi rezultiralo slikom čija je jedna ili obije stranice manja od dimenzija prozora na temelju kojeg se izračunava opisnik.
 
 \chapter{Programsko rješenje}
+Za implementaciju ovog rada odabran je programski jezik Java. Za lakšu organizaciju projekta i potrebnih biblioteka, kao i za automatizaciju prevođenja i povezivanja potrebnih biblioteka koriśten je alat Apache Maven. Radi jednostavnijeg i efikasnijeg ostvarenja operacija koje nisu tema ovog rada koristi se biblioteka OpenCV. \\
+
+Radi lakšeg korištenja i lakše vizualizacije raznih operacije koje se koriste u izračunu opisnika program je ostvaren kao jednostavna grafička aplikacija. Većina opcija ostvarena je kroz gumbe koji se nalaze pri dnu grafičkog sučelja. Ako neku opciju trenutno nije moguće izvesti jer nema učitane slike pritisak gumbe biti će ignoriran, a ako je odabranu opciju moguće izvest, ali je došlo do pogreške korisnik će biti obaviješten. Slika~\ref{fig:initialGui} prikazuje grafičko sučelje i originalne postavke po pokretanju programa.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/initialGui.png}
+	\caption{Grafičko sučelje nakon pokretanja}
+	\label{fig:initialGui}
+\end{figure}
+
+\section{Učitavanje slike}
+Kako bi se mogao izračunati opisnik neke slike ili pokrenuti detekcija objekata na slici potrebno je sliku prvo učitati. Odabirom izbornika \textit{File} pa \textit{Open} otvara se prozor u kojem je moguće izabrati sliku koja će se koristiti. Slika se zatim čuva kao kao objekt Javinog razreda \verb|BufferedImage| kako bi se bogla prikazati ne grafičkom sučelju i kako bi se mogli koristiti podaci iz slike. Razred \verb|Algorithms| sadrži brojne statičke metode kojima se može pristupiti podacima slike kao i metode potrebne za izračun gradijenta. Učitana slika se pretvara u niz tipa \verb|float| korištenjem metode \verb|getDataFloat()|. Sliku je moguće učitati i kao niz tipa \verb|int| metodom \verb|getDataInt()| gdje svaki broj predstavlja jedan piksel. Kako je programsk lakše koristiti prikaz tipa \verb|float| gdje svaka vrijednost predstavlja vrijednost jednog kanala piksela u rasponu od 0 do 1, u nastavku rada koristi se taj prikaz. Reprezentacija slike mogla je biti rješena korištenjem trodimenzionalnog polja gdje dimenzije predstavljaju širinu, visinu i kanale slike ili korištenjem razreda \verb|Mat| biblioteke OpenCV, ali izabrano je jednodimenzionalno polje jer je to najjednostavniji prihvatljivi tip objekta. Slika~\ref{fig:loadedImage} prikazuje grafičko sučelje s učitanom slikom iz skupa za učenje.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/loadedImage.png}
+	\caption{Prikaz učitane slike}
+	\label{fig:loadedImage}
+\end{figure}
+
+\section{Računanje gradijenta}
+Nakon što je slika uspjšno učitana pojedinačno ili kao primjer u skupu za učenje potrebno je izračunati gradijente u smjeru \(x\) i \(y\)-osi. U ovom koraku postoji opcija paralelizacije. Za izračun se koristi funkcija \verb|derive()| koja prima sliku kao polje tipa \verb|float|, znak 'x' ili 'y' koji određuje smjer derivacije, podatke o širini, visini i broju kanala te konačno zastavicu tipa \verb|bool| koja određuje izvodi li se izračun paralelizirano ili ne. Za paralelizaciju se koristi Javin razred \verb|Thread|. Iz blokirajučeg reda \verb|BlockingQueue| dretve izvlače indekse koji predstavljaju stupac ili redak slike za koji treba izračunati derivaciju. Dretve rade u beskonačnoj petlji dok ne izvuku \verb|killElement| koji im signalizira prekid rada, a takvi elementi nalaze se na kraju reda i ima ih koliko i pokrenutih dretvi. Svaka metoda koja koristi paralelizaciju prvo traži broj dostupnih procesorskih jezgri metodom \verb|availableProcessors()| razreda \verb|Runtime| i pokreće upravo toliko dretvi kako nebi došlo do nepotrebnih promjena konteksta. Nakon što su dretve pokrenute poziva se statička metoda \verb|joinThreads()| razreda \verb|Algorithms| kojoj se predaje polje pokrenutih dretvi kako bi glavna dretva bila blokirana dok sve dretve ne završe svoj posao, čime se postže maksimalna efikasnost. \\
+
+Pritiskom na gumbe \textit{dx} ili \textit{dy} grafičkog sučelja pokreće se paralelizirani izračun odabrane derivacije učitane slike. Nakon što je derivacija izračunata umjesto slike na sučelju se prikazuje vizualizacija dobivene derivacije generirana statičnom metodom \verb|convertToImage()| razreda \verb|Algorithms| koja iz polja tipa \verb|float| napravi sliku tipa \verb|BufferedImage|. Slika~\ref{fig:dx} pokazuje derivaciju u smjeru \(x\)-osi dok slika~\ref{fig:dy} pokazuje derivaciju u smjeru \(y\)-osi. Prikazana slika je iz skupa za testiranje. Za prikaz he izabrana slika većih dimenzija kako bi se bolje vidjeli detalji i kako bi se pokazalo da ove metoderade neovisno o dimenzijama slike.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.75\linewidth]{figures/dx.png}
+	\caption{Derivacija u smjeru \(x\)-osi}
+	\label{fig:dx}
+\end{figure}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.75\linewidth]{figures/dy.png}
+	\caption{Derivacija u smjeru \(y\)-osi}
+	\label{fig:dy}
+\end{figure}
+
+\section{Izračun magnitude i kuta}
 
 \chapter{Rezultati}
 
