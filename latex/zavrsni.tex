@@ -23,7 +23,7 @@ Uporaba računalnog vida je danas jako raširena. Koristi se u sustavima za rasp
 
 Cilj ovog rada je ostvariti višedretvenu izvedbu algoritma računanja opisnika temeljenog na histogramu orijentacija gradijenata pomoću kojeg je moguće naučiti neki model da raspoznaje sadrži li neka slika traženi objekt ili ne. Iako se navedeni postupak može koristiti za detekciju proizvoljnih objekata u ovom radu koristi se prozor širine 64 i visine 128 pikseal, kao i u originalnom radu \citep{dalal2005histograms}, predviđen za detekciju pješaka. \\
 
-Osnovni pojmovi, provlemi i prednosti višedretvenosti detaljnije se objašnjeni u drugom poglavlju. Treće poglavlje opisuje postupak računanja histograma orijentacija gradijenata u slikama. Opis detekcije objekata kao i model koji se koristi u te svrhe opisani su u četvrtom poglavlju. Peto poglavlje opisuje implementaciju programskog rješenja dok šesto analizira rezultate i performanse implementacije. Na kraju se nalazi zaključak te je dan popis korištene literature kao i sažetak na hrvatskom i negleskom jeziku.
+Osnovni pojmovi, provlemi i prednosti višedretvenosti detaljnije se objašnjeni u drugom poglavlju. Treće poglavlje opisuje postupak računanja histograma orijentacija gradijenata u slikama. Opis detekcije objekata kao i model koji se koristi u te svrhe opisani su u četvrtom poglavlju. Peto poglavlje opisuje implementaciju programskog rješenja dok šesto analizira rezultate i performanse implementacije. Na kraju se nalazi zaključak te je dan popis korištene literature kao i sažetak na hrvatskom i engleskom jeziku.
 
 \chapter{Višedretvena paralelizacija}
 Gotovo sva računala danas koriste višejezgrene procesore što omogućava paralelno izvođenje više dretvi i tako je moguće postiči značajno ubrzanje izvođenja nekog posla, ako za taj posao nije potrebno pisati rezultate u zajedničke varijable. Upravo se taj pristup koristi kako bi se ostvarial paralelizacija u ovom radu.
@@ -155,6 +155,29 @@ Nakon što su blokovi normalizirani potrebno je sve vrijednosti zapisati kao jed
 Nakon toga dobiven vektor još se jednom normalizira. Tako izračunati vektor predstavlja opisnik slike. Ovime je slika dimenzija 64 na 128 piksela sažeta na opisnik koji sadrži 15 horizontalnih i 7 vertikalnih blokova koji svaki sadrži po 4 čelije odnosno histograma s 9 stupaca. Dakle slika koja ukupno ima 8196 piksela od kojih svaki može sadržavati informacije o četiri kanala sažeta je u jedan opisnik kosi ima samo 3780 vrijednosti neovisno o broju kanala \citep{tomasi2012histograms}. Takvi opisnici mogu se koristiti kako bi se naučili modeli za klasifikaciju te kasnije i za samu klasifikaciju odnosno detekciju ima li slika traženi objekt.
 
 \chapter{Detekcija pješaka}
+Kako bi izračunati opisnici mogli biti korisni potrebno je odabrati klasifikator koji će biti treniran na skupu opisnika izračunatih za zadani skup slika za treniranje. U originalnom radu \cite{dalal2005histograms} kao klasifikator koristi se stroj potpornih vektora te je zato isti korišten u ovom radu.
+
+\section{Stroj potpornih vektora}
+Stroj potpornih vektora \engl{Support Vector Machine, SVM} je klasifikator koji razrede odvaja izračunom optimalne hiperravnine u fazi učenja. Za učenje se koristi tehnika nadzirano učenje što znači da se modelu predaju primjeri izračunatih opisnika i labela predstavlja li taj opisnik sliku koja sadrži traženi objekt ili ne \citep{svm}. Opisani kalsifikator je linearni kalsifikator i daje samo pozitiven ili negativne odgovore. Slika~\ref{fig:hyperplane} prikazuje dobivenu optimalnu hiperravninu za linearni klasifikator.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.5\linewidth]{figures/optimal-hyperplane.png}
+	\caption{Prikaz hiperravnine\protect\footnotemark}
+	\label{fig:hyperplane}
+\end{figure}
+
+\footnotetext{Izvor: \burl{https://docs.opencv.org/3.4/d1/d73/tutorial_introduction_to_svm.html}}
+
+U originalnom radu \cite{dalal2005histograms} korišten je skup podataka INRIA\protect\footnotemark, ali u vrijeme pisanja ovog rada web stranica nije bila dostupna tako da je korišten skup podataka koji su prikupili kolege u prijašnjim godinama.
+
+\footnotetext{Izvor: http://pascal.inrialpes.fr/data/human/}
+
+\section{Klizni prozor}
+Slika na temelju koje se može izračunati ima unaprijed određene dimenzije. No često će se dogoditi da treba analizirati sliku koja je većih dimenzija. Tada je potrebno iskoristiti koncept kliznog prozora. Klizni prozor je prozor dimenzija slike pomoću koje algoritam može izračunati opisnik (dakle u ovom slučaju visine 128 i širine 64 piksela) koji se pomiće po slici koja se trenutno analizira. Na svakoj poziciji ne koju prozor dođe potrebno je izračunati opisnik i predati ga klasifikatoru. Kako bi računanje opisnika za svaku moguću poziciju dugo trajalo i nebi znatno poboljšalo rezultate obićno se definira korak za koliko piksela se prozor pomiće u svakoj iteraciji.
+
+\section{Piramida slike}
+Koncept kliznog prozora rješio je problem analize većih slika, no i dalje postoji mogućnost da je traženi objekt na trenutnoj slici veći od definiranih dimeznija dijela slike na temelju kojega se izračunava opisnik. Kada se koristi piramida slike prvo se analizira originalna slika, a zatim se ta slika smanjuje za neki definirani faktor te se na smanjenoj slici ponovno provodi analiza tehnikom kliznog prozora i izračunom opisnika za svaku poziciju. Postupak smanjivanja i analize smanjene slike se ponavlja dok samnjivenje slike nebi rezultiralo slikom čija je jedna ili obije stranice manja od dimenzija prozora na temelju kojeg se izračunava opisnik.
 
 \chapter{Programsko rješenje}
 
