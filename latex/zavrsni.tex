@@ -281,6 +281,24 @@ Nakon šo je klasifikator uspješno naučen i slika je učitana u grafičko suč
 \end{figure}
 
 \chapter{Rezultati}
+Najvažnija karakteristika algoritma u ovom radu, naravno osim točnosti, je brzina. U nastavku je dana usporedbe vremena izvođenja. Za svaku vrijednost mjerenje je ponovljeno 5 puta te su prosijek i standardna devijacija izračunati pomoću programskog jezika R. Vremena u tablicama iskazana su u sekundama. \\
+
+Operacija računanja derivacije u smjeru \(x\) ili \(y\)-osi može se usporediti s operacijom filtriranja slike. Iz tog razloga u tablicama su dana mjerenja izvedbe Javine nativne operacije filtriranja.
+
+\begin{table}[htb]
+	\centering
+	\caption{Izračun derivacije u smjeru \(x\)-osi}
+	\label{tbl:dx}
+	\begin{tabular}{llll} \hline
+		Dimenzije & Java dx & Paralelizirani dx & dx\\ \hline
+		64x128 & 0.0005$\pm$3.04e-5 & 0.0022$\pm$0.0005 & 0.0008$\pm$0.0004\\
+		900x900 & 0.0204$\pm$0.0015 & 0.0109$\pm$0.0012 & 0.0204$\pm$0.0047\\
+		1280x720 & 0.0207$\pm$0.0015 & 0.0131$\pm$0.002 & 0.0236$\pm$0.0043\\
+		1000x2000 & 0.0431$\pm$0.0027 & 0.0284$\pm$0.0095 & 0.0406$\pm$0.0104\\ \hline
+	\end{tabular}
+\end{table}
+
+Iz tablice~\ref{tbl:dx} vidljivo je da jednodretvena izvedba u prosijeku radi jednako dobro kao i Javina nativna implementacija, ali uz veću standardnu devijaciju. Višedretvena izvedba radi brže od jednodretvene i nativne za slike velikih dimenzija, ali za male slike pokazalo se da je jednodretvena izvedba puno brža.
 
 \chapter{Zaključak}
 Zaključak.
