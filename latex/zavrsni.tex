@@ -250,6 +250,35 @@ Ako je učitana slika širine 64 i visine 128 piksela pritiskom na gumb \textit{
 \end{figure}
 
 \section{Klizni prozor}
+Kako bi se mogla provesti detekcija na slikama većih dimenzija od 64 pikslea širine i 128 piksela visine potrebno je ostvariti klizni prozor i piramidu slike. Klizni prozor je istih dimenzija kao i prozor za izračun opisnika, a za pomak prozora koristi se korak od 5 piksela. Proces pomicanja kliznog prozora i izračuna opisnika za svaku poziciju pokreće se metodom \verb|slideWindow()| razreda \verb|HOGImage|. Metoda ima dvije opcije za paralelizaciju koje se mogu mijenjati postavkama na grafičkom sučelju. Prva zastavica za paralelizaciju \verb|parallel| kontrolira hoće li se opisnici za svaku poziciju prozora računati paralelno ili ne. Pozicija prozora se ponovno računa pomoću indeksa. Polja koja sadrže magnitudu i kut slike izračunata su za cijelu sliku pri konstrukciji objekta \verb|HOGImage| i koriste se samo za čitanje tako da u slučaju paralelnog izračuna više pozicija prozora nije potrebno koristiti mehanizme sinkronizacije ili prepisivati vrijednosti u novo polje. \\
+
+Druga zastavica za paralelizaciju \verb|parallelChildren| pokreće paralelni izračun histograma i normalizacije blokova unutar pojedinog prozora kako je objašnjeno u ranijim poglavljima. Moguće je koristiti proizvoljnu kombinaciju ovih opcija, ali to može dovesti do velikog broja dretvi koje pokušavaju raditi istovremeno što dovodi do čestih promjena konteksta. Rezultat izvođenja ove metode je polje koje sadrži niz izračunatih opisnika za sve pozicije kliznog prozora na učitanoj slici.
+
+\section{Piramida slike}
+Zadnji korak potreban za potpunu analizu slika većih dimenzija je izrada piramide slike i analiza svih njezinih razina. Za smanjenje slika koristi se biblioteka OpenCV. Za faktor skaliranja odabrana je vrijednost \(1.5\). Slike se učitaju kao objekti razreda \verb|Mat| te se skaliraju statičkom metodom \verb|resize()| razreda \verb|Imgproc| biblioteke OpenCV. Piramida slike predstavljena je listom objekata tipa \verb|HOGImage|, a tu listu stvara statička metoda \verb|createPyramid()|. Slike se skaliraju zadanim faktorom sve dok skaliranje nebi rezultiralo slikom čija je jedna stranica manja od minimalnih dimenzija prozora za detekciju i izračun opisnika. Nakon što je slika skalirana stvara se objekt razreda \verb|HOGImage|, a izračun gradijenta je paraleliziran.
+
+\section{Klasifikator za detekciju objekata}
+Potrebno je provjeriti točnost implementiranog postupka, a najbolji način za to je ostvariti jednostavnu implementaciju klasifikatora. Kako implementacija klasifikatora nije tema ovog rada, za klasifikator je odabran razred \verb|SVM| biblioteke OpenCV. Korišten je linearni klasifikator koje određuje je li pronađen pješak ili ne. Na ulaz klasifikatora dovode se iračunati opisnici, a izlaz je pozitivna ili negativna klasifikacija.
+
+\section{Učenje modela}
+Da bi se klasifikator mogao koristiti za detekciju, prvo je potrebno trenirati klasifikator na skupu podataka s označenim labelama. Proces treniranja klasifikatora pokreće se pritiskom na gumb \textit{Train model} na grafičkom sučelju. Potrebno je odabrati direktorij koji sadrži direktorije \textit{pos} i \textit{neg}. Direktorij \textit{pos} sadrži slike koji predstavljaju pozitivne primjere i očekivani omjer dimenzija slika je \(1 : 2\). Ako neku sliku nije moguće skalirati na širinu 64 i visinu 128 piksela, taj primjer se odbacuje. Direktorij \textit{neg} sadrži negativne primjere koji mogu biti proizvoljnih dimenzija. Za svaki negativni primjer slučajno se bira \(10\) indeksa na temelju kojih se izračunavaju opisnici. Po učitavanju slike se spremaju u blokirajući red. Pokreću se dretve koje iz tog reda uzimaju slike i na temelju njih računaju opisnike. Izračunati opisnici spremaju se u drugi blokirajući red. Nakon što dretve završe posao glavna dretva sprema sve opisnike iz blokirajućeg reda za pojedini podskup u polje. Stvara se polje koje veličinom odgovara ukupnom broju pozitivnih i negativnih primjera i puni se labelama. Opisnici iz ona polja zapisuju se kao objekt tipa \verb|Mat| i zajedno s poljem labela predaju kalsifikatoru kao skup za trenairanje. Nakon što je treniranje uspješno završeno moguće je koristiti gumb \textit{Run detection}.  Obavijest o napretku nije vidljiva na korisničkom sučelju jer je za ažuriranje obićno zadužena posebna dretva što bi u ovom slučaju narušilo efikasnost procesa učenja.
+
+\section{Detekcija objekta}
+Nakon šo je klasifikator uspješno naučen i slika je učitana u grafičko sučelje moguće je pokrenuti detekciju na toj slici pritiskom na gumb \textit{Run detection}. Postavke za paralelizaciju detekcije moguće je definirati na samom korisničkom sučelju. Nakon što je detekcija završila za sve razine piramide na korisničko sučelje postavlja se ikona tipa \verb|DetectionIcon| na kojoj su zelenom bojom označeni pravokutnici koji predstavljaju prozor u kojem je detektiran pješak. Pritiskom na gumbe \textit{Next} i \textit{Previous} moguće je mijenjati prikazanu razinu piramide slike i tako vidjeti rezultate detekcije za  ostale razine. Slika~\ref{fig:detection} prikazuje detekciju pješaka na originalnoj slici, a slika~\ref{fig:scaledDetection} prikazuje uspješnu detekciju tek na zadnjoj razini piramide.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/detection.png}
+	\caption{Detekcija pješaka}
+	\label{fig:detection}
+\end{figure}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\linewidth]{figures/scaledDetection.png}
+	\caption{Detekcija pješaka na skaliranoj slici}
+	\label{fig:scaledDetection}
+\end{figure}
 
 \chapter{Rezultati}
 
