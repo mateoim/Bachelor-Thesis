@@ -343,8 +343,8 @@ public class HOGImage {
                     Algorithms.initializeQueue(normalizedSize, processors, -1);
 
             for (int i = 0; i < processors; i++) {
-                Thread thread = new Thread(() -> ThreadsJobs.hogThread(normalizationQueue, normalized,
-                        histogram, this::normalize));
+                Thread thread = new Thread(() -> ThreadsJobs.hogThread(normalizationQueue,
+                        histogram, normalized, this::normalize));
                 threads[i] = thread;
 
                 thread.start();
