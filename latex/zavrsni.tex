@@ -281,11 +281,15 @@ Nakon šo je klasifikator uspješno naučen i slika je učitana u grafičko suč
 \end{figure}
 
 \chapter{Rezultati}
-Najvažnija karakteristika algoritma u ovom radu, naravno osim točnosti, je brzina. U nastavku je dana usporedba vremena izvođenja. Za svaku vrijednost mjerenje je ponovljeno 5 puta te su prosjek i standardna devijacija izračunati pomoću programskog jezika R\footnotemark. Vremena u tablicama iskazana su u sekundama. \\
+Najvažnija karakteristika algoritma u ovom radu, naravno osim točnosti, je brzina. U nastavku je dana usporedba vremena izvođenja. Za svaku vrijednost mjerenje je ponovljeno 5 puta te su prosjek i standardna devijacija izračunati pomoću programskog jezika R\footnotemark. Vremena u tablicama iskazana su u sekundama. Testiranje se provodi na računalu koje istovremeno može izvoditi osam dretvi. \\
 
 \footnotetext{\url{https://www.r-project.org}}
 
+\section{Usporedba izračuna gradijenta}
+
 Operacija računanja derivacije u smjeru \(x\) ili \(y\)-osi može se usporediti s operacijom filtriranja slike. Iz tog razloga u tablicama su prikazana mjerenja izvedbe Javine nativne operacije filtriranja.
+
+\subsection{Derivacija u smjeru \(x\)-osi}
 
 \begin{table}[htb]
 	\centering
@@ -301,6 +305,23 @@ Operacija računanja derivacije u smjeru \(x\) ili \(y\)-osi može se usporediti
 \end{table}
 
 Iz tablice~\ref{tbl:dx} vidljivo je da jednodretvena izvedba u prosijeku radi jednako dobro kao i Javina nativna implementacija, ali uz veću standardnu devijaciju. Višedretvena izvedba radi brže od jednodretvene i nativne za slike velikih dimenzija, ali za male slike pokazalo se da je jednodretvena izvedba puno brža.
+
+\subsection{Derivacija u smjeru \(y\)-osi}
+
+\begin{table}[htb]
+	\centering
+	\caption{Izračun derivacije u smjeru \(y\)-osi}
+	\label{tbl:dy}
+	\begin{tabular}{llll} \hline
+		Dimenzije & Java dy & Paralelizirani dy & dy\\ \hline
+		64x128 & 0.0005$\pm$2.7e-5 & 0.0023$\pm$0.0006 & 0.0009$\pm$0.0007\\
+		900x900 & 0.0186$\pm$0.0011 & 0.0163$\pm$0.0056 & 0.0247$\pm$0.0055\\
+		1280x720 & 0.0187$\pm$0.0011 & 0.0189$\pm$0.0034 & 0.0274$\pm$0.003\\
+		1000x2000 & 0.0404$\pm$0.0024 & 0.0292$\pm$0.0076 & 0.0486$\pm$0.01\\ \hline
+	\end{tabular}
+\end{table}
+
+Ponašanje trajanja paraleliziranog i slijednog izvođenja izračuna derivacije u smjeru \(y\)-osi prikazano u tablici~\ref{tbl:dy} slično je kao i u slučaju \(x\)-osi. Međutim zanimljivo je što računanje derivacije u smjeru \(y\)-osi za svaki primjer traje duže nego izračun istog primjera po \(x\)-osi. Razlog tome je vrlo vjerojatno kompleksniji način pristupa elementima po stupcu nego po retku. Umjesto inkrementiranja, za pristup sljedećem pikselu trenutnom odmaku potrebno je dodati cijelu duljinu retka.
 
 \chapter{Zaključak}
 Zaključak.
