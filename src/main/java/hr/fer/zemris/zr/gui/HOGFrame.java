@@ -54,6 +54,26 @@ public class HOGFrame extends JFrame {
     private static final int DEFAULT_HEIGHT = 128;
 
     /**
+     * Positive train example directory name.
+     */
+    private static final String TRAIN_POSITIVE = "pos";
+
+    /**
+     * Negative train example directory name.
+     */
+    private static final String TRAIN_NEGATIVE = "neg";
+
+    /**
+     * Positive test example directory name.
+     */
+    private static final String TEST_POSITIVE = "posTest";
+
+    /**
+     * Negative test example directory name.
+     */
+    private static final String TEST_NEGATIVE = "negTest";
+
+    /**
      * Keeps currently loaded image.
      */
     private BufferedImage loadedImage;
@@ -153,6 +173,10 @@ public class HOGFrame extends JFrame {
         final JButton train = new JButton("Train model");
         buttonPanel.add(train);
 
+        final JButton test = new JButton("Test model");
+        buttonPanel.add(test);
+        test.setEnabled(false);
+
         final JButton window = new JButton("Run detection");
         buttonPanel.add(window);
         window.setEnabled(false);
@@ -163,10 +187,12 @@ public class HOGFrame extends JFrame {
                 train.setEnabled(true);
             } else {
                 window.setEnabled(true);
+                test.setEnabled(true);
             }
         });
 
         window.addActionListener(e -> slidingWindow());
+        test.addActionListener(e -> testModel());
 
         JPanel checkboxPanel = new JPanel();
         controlsPanel.add(checkboxPanel, BorderLayout.SOUTH);
@@ -363,16 +389,8 @@ public class HOGFrame extends JFrame {
 
         detectionList.clear();
         currentIndex = 0;
-        List<HOGImage> pyramid = Algorithms.createPyramid(image, SCALING_FACTOR, DEFAULT_HEIGHT, DEFAULT_WIDTH);
 
-        float[][][] featureVectors = new float[pyramid.size()][][];
-
-        int index = 0;
-
-        for (HOGImage hogImage : pyramid) {
-            featureVectors[index++] = hogImage.slideWindow(parallelCheckbox.isSelected(),
-                    parallelChildrenCheckbox.isSelected());
-        }
+        final float[][][] featureVectors = pyramidDetection(image);
 
         List<Integer> list;
         BufferedImage currentImage = loadedImage;
@@ -401,6 +419,28 @@ public class HOGFrame extends JFrame {
     }
 
     /**
+     * Calculates feature vectors for all images in an image pyramid for the given image.
+     *
+     * @param image for whose pyramid feature vectors will be calculated.
+     *
+     * @return feature vectors for all images in the pyramid.
+     */
+    private float[][][] pyramidDetection(Mat image) {
+        final List<HOGImage> pyramid = Algorithms.createPyramid(image, SCALING_FACTOR, DEFAULT_HEIGHT, DEFAULT_WIDTH);
+
+        final float[][][] featureVectors = new float[pyramid.size()][][];
+
+        int index = 0;
+
+        for (HOGImage hogImage : pyramid) {
+            featureVectors[index++] = hogImage.slideWindow(parallelCheckbox.isSelected(),
+                    parallelChildrenCheckbox.isSelected());
+        }
+
+        return featureVectors;
+    }
+
+    /**
      * Used to initialize {@link #model} training.
      *
      * @return {@code true} if the model was trained successfully,
@@ -417,13 +457,14 @@ public class HOGFrame extends JFrame {
 
         final Path src = jfc.getSelectedFile().toPath();
 
-        final Path positive = src.resolve("pos");
-        final Path negative = src.resolve("neg");
+        final Path positive = src.resolve(TRAIN_POSITIVE);
+        final Path negative = src.resolve(TRAIN_NEGATIVE);
 
         if (!Files.exists(positive) || !Files.exists(negative)) {
             JOptionPane.showOptionDialog(
                     this,
-                    "Selected directory must contain \"pos\" and \"neg\" directories.",
+                    "Selected directory must contain \"" + TRAIN_POSITIVE + "\" and \""
+                            + TRAIN_NEGATIVE+ "\" directories.",
                     "Error",
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.ERROR_MESSAGE,
@@ -482,6 +523,121 @@ public class HOGFrame extends JFrame {
         model.setKernel(SVM.LINEAR);
         model.setTermCriteria(new TermCriteria(TermCriteria.MAX_ITER, 10_000, 1e-6));
         model.train(trainingDataMat, Ml.ROW_SAMPLE, labelsMat);
+    }
+
+    /**
+     * Used to test the trained model on a test dataset and evaluate accuracy.
+     */
+    private void testModel() {
+        final JFileChooser jfc = new JFileChooser();
+        jfc.setDialogTitle("Select folder with test examples");
+        jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        if (jfc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        final Path src = jfc.getSelectedFile().toPath();
+
+        final Path positivePath = src.resolve(TEST_POSITIVE);
+        final Path negativePath = src.resolve(TEST_NEGATIVE);
+
+        if (!Files.exists(positivePath) || !Files.exists(negativePath)) {
+            JOptionPane.showOptionDialog(
+                    this,
+                    "Selected directory must contain \"" + TEST_POSITIVE + "\" and \"" +
+                            TEST_NEGATIVE + "\" directories.",
+                    "Error",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null, null, null);
+            return;
+        }
+
+        final List<Mat> positiveImages = loadImages(positivePath);
+
+        if (positiveImages == null) return;
+
+        final List<Mat> negativeImages = loadImages(negativePath);
+
+        if (negativeImages == null) return;
+
+        final int[] positive = detectObjects(positiveImages);
+        final int[] negative = detectObjects(negativeImages);
+
+        JOptionPane.showOptionDialog(
+                this,
+                "True positive: " + positive[0] + " False negative: " + positive[1]
+                + "\nFalse positive: " + negative[0] + " True negative: " + negative[1],
+                "Results",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null, null, null);
+    }
+
+    /**
+     * Loads images as {@link Mat} objects from the given path.
+     *
+     * @param path from which the images should be loaded.
+     *
+     * @return a {@link List} of all found images.
+     */
+    private List<Mat> loadImages(Path path) {
+        final MatVisitor visitor = new MatVisitor();
+
+        try {
+            Files.walkFileTree(path, visitor);
+        } catch (IOException exc) {
+            JOptionPane.showOptionDialog(
+                    this,
+                    "Error opening a file",
+                    "Error",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null, null, null);
+            return null;
+        }
+
+        return visitor.images;
+    }
+
+    /**
+     * Runs object detection on the given images.
+     *
+     * @param images {@link List} of images being analyzed.
+     *
+     * @return an {@code array} containing number of positive classifications
+     *         at index {@code 0} and negative classifications at index {@code 1}.
+     */
+    private int[] detectObjects(List<Mat> images) {
+        int positive = 0;
+        int negative = 0;
+
+        for (Mat image : images) {
+            final float[][][] featureVectors = pyramidDetection(image);
+            boolean found = false;
+
+            for (float[][] outer : featureVectors) {
+                for (float[] vector : outer) {
+                    Mat toPredict = new Mat(1, vector.length, CvType.CV_32FC1);
+                    toPredict.put(0, 0, vector);
+
+                    if (model.predict(toPredict) == 1) {
+                        positive++;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) break;
+            }
+
+            if (!found) {
+                negative++;
+            }
+        }
+
+        return new int[] {positive, negative};
     }
 
     /**
@@ -549,6 +705,9 @@ public class HOGFrame extends JFrame {
      */
     private static class ImageVisitor implements FileVisitor<Path> {
 
+        /**
+         * Keeps track of whether positive examples are being read or not.
+         */
         private final boolean positive;
 
         /**
@@ -561,6 +720,11 @@ public class HOGFrame extends JFrame {
          */
         private final BufferedImage killElement = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
 
+        /**
+         * Default constructor.
+         *
+         * @param positive used to define whether examples should be scaled to {@code 64 x 128}.
+         */
         public ImageVisitor(boolean positive) {
             this.positive = positive;
         }
@@ -605,6 +769,38 @@ public class HOGFrame extends JFrame {
                 images.add(image);
             }
 
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+    }
+
+    /**
+     * A {@link FileVisitor} used to read images as {@link Mat} objects.
+     */
+    private static class MatVisitor implements FileVisitor<Path> {
+
+        /**
+         * Keeps read images.
+         */
+        private final List<Mat> images = new LinkedList<>();
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            images.add(Imgcodecs.imread(file.toString()));
             return FileVisitResult.CONTINUE;
         }
 
