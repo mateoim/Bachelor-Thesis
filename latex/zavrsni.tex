@@ -48,7 +48,7 @@ Promjena konteksta \engl{context switching} nastupa kada dolazi do promjene akti
 Dretve mogu koristiti neke zajedničke resurse. Moguće je istovremeno čitanje zajedničkih resursa, no ako je potrebno promijeniti vrijednost neke varijable moguće je da dvije ili više dretvi to pokušaju učiniti istovremeno. Kako se promjena jedne dretve ne bi izgubila istovremenim pisanjem druge dretve potrebno je osigurati da samo jedna dretva u bilo kojem trenutku može modificirati tu vrijednost. Dio posla koji smije obavljati samo jedna dretva u bilo kojem trenutku naziva se kritični odsječak \engl{critical section}. Kako bi se kritični odsječak zaštitio koriste se sinkronizacijski mehanizmi. U ovom radu korištene su blokirajuće strukture podataka. Kada dretva pokuša koristiti blokirajuću strukturu podataka koju već koristi neka druga dretva ona postaje blokirana, odnosno mora čekati da prva dretva prestane koristiti tu strukturu podataka i tek tada može nastaviti svoje izvođenje \citep{os}.
 
 \chapter{Algoritam računanja histograma orijentacija gradijenata u slikama}
-Algoritam računanja histograma orijentacija gradijenata \engl{histogram of oriented gradients} koristi se kako bi se za sliku izračunao njezin opisnik koji sadrži sažete, korisne informacije o toj slici. Dobiveni opisnik može se proslijediti nekom naučenom klasifikatoru koji na temelju njega može odrediti sadrži li slika (ili obrađeni dio slike) traženi objekt. Izračun opisnika se provodi na dijelu slike određene veličine, a točne dimenzije dijela slike koji se koristi ovise o traženom objektu. Glavna ideja je da se traženi objekt može prepoznati pomoću njegovih bridova i orijentacije tih bridova te se zato koristi gradijent.
+Algoritam računanja histograma orijentacija gradijenata \engl{histogram of oriented gradients} koristi se kako bi se za sliku izračunao njezin opisnik koji sadrži sažete, korisne informacije o toj slici. Dobiveni opisnik može se proslijediti nekom naučenom klasifikatoru koji na temelju njega može odrediti sadrži li slika (ili obrađeni dio slike) traženi objekt. Izračun opisnika se provodi na dijelu slike određene veličine, a točne dimenzije dijela slike koji se koristi ovise o traženom objektu. Glavna ideja je da se traženi objekt može prepoznati pomoću njegovih rubova i orijentacije tih rubova te se zato koristi gradijent.
 
 \section{Izračun gradijenta}
 Prije samog izračuna gradijenta moguće je normalizirati boje i gama vrijednosti, ali kako je u originalnom radu \citep{dalal2005histograms} pokazano da to ne utječe značajno na rezultate zbog kasnije normalizacije opisnika, u ovom radu je taj korak preskočen. Za izračun gradijenta sliku je potrebno filtrirati određenom maskom u smjeru \(x\)-osi i \(y\)-osi. U originalnom radu \citep{dalal2005histograms} isprobano je nekoliko tipova maski no najbolja se pokazala jednostavna 1-D centrirana maska koja se zato koristi i u ovom radu: 
@@ -97,7 +97,7 @@ Za izračun histograma prvo treba sliku podijeliti u kvadratne ili kružne ćeli
 \footnotetext{Izvor: \burl{https://www.learnopencv.com/histogram-of-oriented-gradients/}}
 
 
-Za svaku ćeliju zatim se računa histogram orijentacije gradijenata. U radu \citep{dalal2005histograms} pokazalo se da za detekciju pješaka preciznost rase s povećanjem broja stupaca po histogramu do broja 9 te se zato i u ovom radu koristi upravo devet stupaca. Raspon svakog stupca definiran je formulom:
+Za svaku ćeliju zatim se računa histogram orijentacije gradijenata. U radu \citep{dalal2005histograms} pokazalo se da za detekciju pješaka preciznost raste s povećanjem broja stupaca po histogramu do broja 9 te se zato i u ovom radu koristi upravo devet stupaca. Širina svakog stupca definiran je formulom:
 
 \begin{equation}
 	w = \frac{180}{B}
@@ -111,7 +111,7 @@ U formuli \ref{eq:width} \(B\) predstavlja broj stupaca \citep{tomasi2012histogr
 	\label{eq:center}
 \end{equation}
 
- U formuli \ref{eq:center} \(w\) predstavlja širinu stupca, a \(i\) indeks stupca. Piksel svojom magnitudom doprinosi stupcu kojem pripada po some kutu i sljedećem stupcu ovisno o udaljenosti kuta od središta stupca kojem pripada, a to je prikazano formulama: 
+ U formuli \ref{eq:center} \(w\) predstavlja širinu stupca, a \(i\) indeks stupca. Piksel svojom magnitudom doprinosi stupcu kojem pripada po svome kutu i sljedećem stupcu ovisno o udaljenosti kuta od središta stupca kojem pripada, a to je prikazano formulama: 
  
  \begin{equation}
 	v_{j} = \mu \frac{c_{j + 1} - \theta}{w}
@@ -128,14 +128,14 @@ Zbroj vrijednosti iz formula \ref{eq:vote} i \ref{eq:voteNext} mora biti \(\mu\)
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=\linewidth]{figures/vote.png}
-	\caption{Slika podijeljena u ćelije\protect\footnotemark}
+	\caption{Doprinos magnitude pojedinom stupcu\protect\footnotemark}
 	\label{fig:vote}
 \end{figure}
 
 \footnotetext{Izvor: \citep{tomasi2012histograms}}
 
 \section{Normalizacija blokova}
-Lokalno osvjetljenje i kontrast mogu znatno utjecati na magnitudu gradijenta. Iz tog razloga vrlo je važno normalizirati blokove susjednih ćelija. Odabrani su blokovi širine 4 i visine 4 ćelije. U radu \cite{dalal2005histograms} ustanovljeno je da preklapanje blokova na pola bloka pozitivno utječe na preciznost detekcije tako da je u ovom radu za pomak bloka korištena jedna ćelija. Vrijednosti u bloku zapisane u obliku vektora normiraju se formulom:
+Lokalno osvjetljenje i kontrast mogu znatno utjecati na magnitudu gradijenta. Iz tog razloga vrlo je važno normalizirati blokove susjednih ćelija. Odabrani su blokovi širine 2 i visine 2 ćelije. U radu \cite{dalal2005histograms} ustanovljeno je da preklapanje blokova na pola bloka pozitivno utječe na preciznost detekcije tako da je u ovom radu za pomak bloka korištena jedna ćelija. Vrijednosti u bloku zapisane u obliku vektora normiraju se formulom:
 
 \begin{equation}
 	v = \frac{v}{\sqrt{\left\|v\right\|^2 + \epsilon}}
@@ -152,7 +152,7 @@ Nakon što su blokovi normalizirani potrebno je sve vrijednosti zapisati kao jed
 	\label{eq:limit}
 \end{equation}
 
-Nakon toga dobiven vektor još se jednom normalizira. Tako izračunati vektor predstavlja opisnik slike. Ovime je slika dimenzija 64 na 128 piksela sažeta na opisnik koji sadrži 15 horizontalnih i 7 vertikalnih blokova koji svaki sadrži po 4 ćelije odnosno histograma s 9 stupaca. Dakle slika koja ukupno ima 8196 piksela od kojih svaki može sadržavati informacije o četiri kanala sažeta je u jedan opisnik koji ima samo 3780 vrijednosti neovisno o broju kanala \citep{tomasi2012histograms}. Takvi opisnici mogu se koristiti kako bi se naučili modeli za klasifikaciju te kasnije i za samu klasifikaciju odnosno detekciju ima li slika traženi objekt.
+Nakon toga dobiven vektor još se jednom normalizira. Tako izračunati vektor predstavlja opisnik slike. Ovime je slika dimenzija 64 na 128 piksela sažeta na opisnik koji sadrži 15 horizontalnih i 7 vertikalnih blokova koji svaki sadrži po 4 ćelije odnosno histograma s 9 stupaca. Dakle slika koja ukupno ima 8196 piksela od kojih svaki može sadržavati informacije o četiri kanala sažeta je u jedan opisnik koji ima samo 3780 \citep{tomasi2012histograms}. Kako se pri izračunu histograma magnituda svakog kanala raspoređuje u stupce istog histograma ovisno o svome kutu, duljina opisnika je neovisna o broju kanala. Takvi opisnici mogu se koristiti kako bi se naučili modeli za klasifikaciju te kasnije i za samu klasifikaciju odnosno detekciju ima li slika traženi objekt.
 
 \chapter{Detekcija pješaka}
 Kako bi izračunati opisnici mogli biti korisni potrebno je odabrati klasifikator koji će biti treniran na skupu opisnika izračunatih za zadani skup slika za treniranje. U originalnom radu \cite{dalal2005histograms} kao klasifikator koristi se stroj potpornih vektora te je zato isti korišten u ovom radu.
@@ -192,7 +192,7 @@ Radi lakšeg korištenja i lakše vizualizacije raznih operacije koje se koriste
 \end{figure}
 
 \section{Učitavanje slike}
-Kako bi se mogao izračunati opisnik neke slike ili pokrenuti detekcija objekata na slici potrebno je sliku prvo učitati. Odabirom izbornika \textit{File} pa \textit{Open} otvara se prozor u kojem je moguće izabrati sliku koja će se koristiti. Slika se zatim čuva kao objekt Javinog razreda \verb|BufferedImage| kako bi se mogla prikazati ne grafičkom sučelju i kako bi se mogli koristiti podaci iz slike. Razred \verb|Algorithms| sadrži brojne statičke metode kojima se može pristupiti podacima slike kao i metode potrebne za izračun gradijenta. Učitana slika se pretvara u niz tipa \verb|float| korištenjem metode \verb|getDataFloat()|. Sliku je moguće učitati i kao niz tipa \verb|int| metodom \verb|getDataInt()| gdje svaki broj predstavlja jedan piksel. Kako je programski lakše koristiti prikaz tipa \verb|float| gdje svaka vrijednost predstavlja vrijednost jednog kanala piksela u rasponu od 0 do 1, u nastavku rada koristi se taj prikaz. Reprezentacija slike mogla je biti riješena korištenjem trodimenzionalnog polja gdje dimenzije predstavljaju širinu, visinu i kanale slike ili korištenjem razreda \verb|Mat| biblioteke OpenCV, ali izabrano je jednodimenzionalno polje jer je to najjednostavniji prihvatljivi tip objekta. Slika~\ref{fig:loadedImage} prikazuje grafičko sučelje s učitanom slikom iz skupa za učenje.
+Kako bi se mogao izračunati opisnik neke slike ili pokrenuti detekcija objekata na slici potrebno je sliku prvo učitati. Odabirom izbornika \textit{File} pa \textit{Open} otvara se prozor u kojem je moguće izabrati sliku koja će se koristiti. Slika se zatim čuva kao objekt Javinog razreda \verb|BufferedImage| kako bi se mogla prikazati na grafičkom sučelju i kako bi se mogli koristiti podaci iz slike. Razred \verb|Algorithms| sadrži brojne statičke metode kojima se može pristupiti podacima slike kao i metode potrebne za izračun gradijenta. Učitana slika se pretvara u niz tipa \verb|float| korištenjem metode \verb|getDataFloat()|. Sliku je moguće učitati i kao niz tipa \verb|int| metodom \verb|getDataInt()| gdje svaki broj predstavlja jedan piksel. Kako je programski lakše koristiti prikaz tipa \verb|float| gdje svaka vrijednost predstavlja vrijednost jednog kanala piksela u rasponu od 0 do 1, u nastavku rada koristi se taj prikaz. Reprezentacija slike mogla je biti riješena korištenjem trodimenzionalnog polja gdje dimenzije predstavljaju širinu, visinu i kanale slike ili korištenjem razreda \verb|Mat| biblioteke OpenCV, ali izabrano je jednodimenzionalno polje jer je to najjednostavniji prihvatljivi tip objekta. Slika~\ref{fig:loadedImage} prikazuje grafičko sučelje s učitanom slikom iz skupa za učenje.
 
 \begin{figure}[htb]
 	\centering
@@ -261,7 +261,7 @@ Zadnji korak potreban za potpunu analizu slika većih dimenzija je izrada pirami
 Potrebno je provjeriti točnost implementiranog postupka, a najbolji način za to je ostvariti jednostavnu implementaciju klasifikatora. Kako implementacija klasifikatora nije tema ovog rada, za klasifikator je odabran razred \verb|SVM| biblioteke OpenCV. Korišten je linearni klasifikator koje određuje je li pronađen pješak ili ne. Na ulaz klasifikatora dovode se izračunati opisnici, a izlaz je pozitivna ili negativna klasifikacija.
 
 \section{Učenje modela}
-Da bi se klasifikator mogao koristiti za detekciju, prvo je potrebno trenirati klasifikator na skupu podataka s označenim labelama. Proces treniranja klasifikatora pokreće se pritiskom na gumb \textit{Train model} na grafičkom sučelju. Potrebno je odabrati direktorij koji sadrži direktorije \textit{pos} i \textit{neg}. Direktorij \textit{pos} sadrži slike koji predstavljaju pozitivne primjere i očekivani omjer dimenzija slika je \(1 : 2\). Ako neku sliku nije moguće skalirati na širinu 64 i visinu 128 piksela, taj primjer se odbacuje. Direktorij \textit{neg} sadrži negativne primjere koji mogu biti proizvoljnih dimenzija. Za svaki negativni primjer slučajno se bira \(10\) indeksa na temelju kojih se izračunavaju opisnici. Po učitavanju slike se spremaju u blokirajući red. Pokreću se dretve koje iz tog reda uzimaju slike i na temelju njih računaju opisnike. Izračunati opisnici spremaju se u drugi blokirajući red. Nakon što dretve završe posao glavna dretva sprema sve opisnike iz blokirajućeg reda za pojedini podskup u polje. Stvara se polje koje veličinom odgovara ukupnom broju pozitivnih i negativnih primjera i puni se labelama. Opisnici iz oba polja zapisuju se kao objekt tipa \verb|Mat| i zajedno s poljem labela predaju klasifikatoru kao skup za treniranje. Nakon što je treniranje uspješno završeno moguće je koristiti gumb \textit{Run detection}.  Obavijest o napretku nije vidljiva na korisničkom sučelju jer je za ažuriranje obično zadužena posebna dretva što bi u ovom slučaju narušilo efikasnost procesa učenja.
+Da bi se klasifikator mogao koristiti za detekciju, prvo je potrebno trenirati klasifikator na skupu podataka s označenim labelama. Proces treniranja klasifikatora pokreće se pritiskom na gumb \textit{Train model} na grafičkom sučelju. Potrebno je odabrati direktorij koji sadrži direktorije \textit{pos} i \textit{neg}. Direktorij \textit{pos} sadrži slike koji predstavljaju pozitivne primjere i očekivani omjer dimenzija slika je \(1 : 2\). Ako neku sliku nije moguće skalirati na širinu 64 i visinu 128 piksela, taj primjer se odbacuje. Direktorij \textit{neg} sadrži negativne primjere koji mogu biti proizvoljnih dimenzija. Za svaki negativni primjer slučajno se bira \(10\) indeksa neskalirane slike pomoću kojih se, kao i kod kliznog prozora, računa položaj dijela slike čiji će opisnik biti korišten. Po učitavanju slike se spremaju u blokirajući red. Pokreću se dretve koje iz tog reda uzimaju slike i na temelju njih računaju opisnike. Izračunati opisnici spremaju se u drugi blokirajući red. Nakon što dretve završe posao glavna dretva sprema sve opisnike iz blokirajućeg reda za pojedini podskup u polje. Stvara se polje koje veličinom odgovara ukupnom broju pozitivnih i negativnih primjera i puni se labelama. Opisnici iz oba polja zapisuju se kao objekt tipa \verb|Mat| i zajedno s poljem labela predaju klasifikatoru kao skup za treniranje. Nakon što je treniranje uspješno završeno moguće je koristiti gumb \textit{Run detection}.  Obavijest o napretku nije vidljiva na korisničkom sučelju jer je za ažuriranje obično zadužena posebna dretva što bi u ovom slučaju narušilo efikasnost procesa učenja.
 
 \section{Detekcija objekta}
 Nakon šo je klasifikator uspješno naučen i slika je učitana u grafičko sučelje moguće je pokrenuti detekciju na toj slici pritiskom na gumb \textit{Run detection}. Postavke za paralelizaciju detekcije moguće je definirati na samom korisničkom sučelju. Nakon što je detekcija završila za sve razine piramide na korisničko sučelje postavlja se ikona tipa \verb|DetectionIcon| na kojoj su zelenom bojom označeni pravokutnici koji predstavljaju prozor u kojem je detektiran pješak. Pritiskom na gumbe \textit{Next} i \textit{Previous} moguće je mijenjati prikazanu razinu piramide slike i tako vidjeti rezultate detekcije za  ostale razine. Slika~\ref{fig:detection} prikazuje detekciju pješaka na originalnoj slici, a slika~\ref{fig:scaledDetection} prikazuje uspješnu detekciju tek na zadnjoj razini piramide.
@@ -293,7 +293,7 @@ Operacija računanja derivacije u smjeru \(x\) ili \(y\)-osi može se usporediti
 
 \begin{table}[htb]
 	\centering
-	\caption{Izračun derivacije u smjeru \(x\)-osi}
+	\caption{Trajanje izračuna derivacije u smjeru \(x\)-osi u sekundama}
 	\label{tbl:dx}
 	\begin{tabular}{llll} \hline
 		Dimenzije & Java dx & Paralelizirani dx & dx\\ \hline
@@ -310,7 +310,7 @@ Iz tablice~\ref{tbl:dx} vidljivo je da jednodretvena izvedba u prosijeku radi je
 
 \begin{table}[htb]
 	\centering
-	\caption{Izračun derivacije u smjeru \(y\)-osi}
+	\caption{Trajanje izračuna derivacije u smjeru \(y\)-osi u sekundama}
 	\label{tbl:dy}
 	\begin{tabular}{llll} \hline
 		Dimenzije & Java dy & Paralelizirani dy & dy\\ \hline
@@ -323,23 +323,92 @@ Iz tablice~\ref{tbl:dx} vidljivo je da jednodretvena izvedba u prosijeku radi je
 
 Ponašanje trajanja paraleliziranog i slijednog izvođenja izračuna derivacije u smjeru \(y\)-osi prikazano u tablici~\ref{tbl:dy} slično je kao i u slučaju \(x\)-osi. Međutim zanimljivo je što računanje derivacije u smjeru \(y\)-osi za svaki primjer traje duže nego izračun istog primjera po \(x\)-osi. Razlog tome je vrlo vjerojatno kompleksniji način pristupa elementima po stupcu nego po retku. Umjesto inkrementiranja, za pristup sljedećem pikselu trenutnom odmaku potrebno je dodati cijelu duljinu retka.
 
+\section{Izračun opisnika}
+Uspoređeno je vrijeme potrebno za izračun u slučaju jednodretvene i višedretvene izvedbe. Izabrane su tri slike iz skupa za učenje na kojima je provedeno mjerenje. Kako se jednodretvena izvedba pokazala brža od višedretvene napravljeno je i treće mjerenje u kojem se punjenjem redova koji se koriste u višedretvenoj izvedbi pokušava odrediti utjecaj inicijalizacije blokirajućih struktura podataka na vrijeme izvođenja.
+
+\begin{table}[htb]
+	\centering
+	\caption{Trajanje izračuna opisnika u sekundama}
+	\label{tbl:featureVector}
+	\begin{tabular}{lll} \hline
+		Slijedni izračun & Paralelizirani izračun & Slijedni izračun uz korištenje reda\\ \hline
+		0.0022$\pm$0.0001 & 0.0031$\pm$0.0013 & 0.0024$\pm$0.0001\\
+		0.0023$\pm$6.28e-5 & 0.0137$\pm$0.0051 & 0.0025$\pm$0.0001\\
+		0.0023$\pm$0.0001 & 0.0029$\pm$0.0012 & 0.0025$\pm$0.0001\\ \hline
+	\end{tabular}
+\end{table}
+
+Iz tablice~\ref{tbl:featureVector} vidljivo je da je jednodretvena izvedba u prosjeku brža. Trajanje paralelnog izračuna puno se razlikovalo između mjerenja što je vidljivo iz velike standardne devijacije. Duljem izvođenju paralelne izvedbe također pridonosi činjenica da se za relativno kratak posao prvo koriste dretve za izračun histograma koje se zatim gase i pokreću se nove dretve za normalizaciju blokova. Iako inicijalizacija blokirajućih redova utječe na vrijeme izvođenja u svim primjerima pokazalo se da to nije ključni doprinos usporenju.
+
+\section{Treniranje klasifikatora}
+Iako je u implementaciji proces treniranja klasifikatora uvijek paraleliziran, radi usporedbe kod je modificiran da se izvodi jednodretveno kako bi se mogli usporediti rezultati. Skup za treniranje sadrži 903 pozitivna i 1632 negativna primjera. Treniranje uz istovremeno računanje opisnika za različite primjere u prosjeku traje 43.83 sekunde uz standardnu devijaciju od 1.93 sekunde dok jednodretvena izvedba treniranja u prosjeku traje 60.67 sekundi uz standardnu devijaciju od 1.48 sekundi.
+
+\section{Detekcija objekata}
+U nastavku je provedena usporedba brzine izvođenja detekcije objekata uz razne postavke paralelizacije i testirana je preciznost klasifikacije.
+
+\subsection{Brzina izvođenja}
+U tablici~\ref{tbl:hog} prikazana su vremena izvođenja detekcije objekata u slikama različitih dimenzija. Drugi stupac označava izračun opisnika za više pozicija kliznog prozora istovremeno. Rezultati u četvrtom stupcu koriste paralelni izračun histograma i paralelnu normalizaciju blokova dok rezultati u zadnjem stupcu koriste obije opcije.
+
+\begin{table}[htb]
+	\centering
+	\caption{Trajanje detekcije objekata u sekundama}
+	\label{tbl:hog}
+	\begin{tabular}{lllll} \hline
+		Dimenzije & Klizni prozor & Bez paralelizacije & Histogram i normalizacija & Sve opcije\\ \hline
+		64x128 & 0.0093$\pm$0.0009 & 0.0061$\pm$0.0002 & 0.0092$\pm$0.0003 & 0.0123$\pm$0.0005\\
+		900x900 & 3.17$\pm$0.11 & 11.19$\pm$0.07 & 41.93$\pm$0.39 & 39.75$\pm$0.38\\
+		1280x720 & 3.39$\pm$0.1 & 13.24$\pm$0.19 & 46.67$\pm$0.28 & 44.38$\pm$0.37\\
+		1000x2000 & 8.43$\pm$0.4 & 32.57$\pm$0.6 & 112.82$\pm$1.27 & 108.58$\pm$1.11\\ \hline
+	\end{tabular}
+\end{table}
+
+Iz tablice~\ref{tbl:hog} vidljivo je kako istovremeni izračun više pozicija kliznog prozora daje daleko najbolje rezultate dok ostale opcije daju lošije rezultate nego izvedba bez paralelizacije. Razlog tome je često paljenje i gašenje dretvi što je već napomenuto kod analize izračuna opisnika.
+
+\subsection{Točnost klasifikacije}
+Za provjeru točnosti klasifikacije pokreće se detekcija na slikama skupa za testiranje. Kako se radi o automatiziranom testu kao istiniti pozitivi broje se sve slike koje sadrže pješaka i na njima je klasifikator detektirao pješaka. Postoji mogućnost da se u toj klasifikaciji dogodi pogreška te da prozor koji je klasificiran kao pješak zapravo nije pješak. Skup za testiranje sadrži 102 pozitivna i 102 negativna primjera. Za pokretanje testiranja prvo je potrebno trenirati klasifikator. Zatim se pritiskom na gumb \textit{Train model} može odabrati direktorij koji sadrži direktorije \textit{posTest} i \textit{negTest} s pozitivnim i negativnim primjerima. Po završetku se pojavljuje prozor s podacima o istinitim pozitivima, lažnim pozitivima, istinitim negativima i lažnim negativima.
+
+\begin{table}[htb]
+	\centering
+	\caption{Rezultati detekcije na slikama iz skupa za testiranje}
+	\label{tbl:accuracy}
+	\begin{tabular}{lllll} \hline
+		Istiniti pozitivi & Lažni pozitivi & Istiniti negativi & Lažni negativi & Točnost\\ \hline
+		84 & 20 & 82 & 18 & 81\%\\
+		84 & 19 & 83 & 18 & 82\%\\
+		83 & 20 & 82 & 19 & 81\%\\
+		87 & 21 & 81 & 15 & 82\%\\
+		80 & 17 & 85 & 22 & 81\%\\ \hline
+	\end{tabular}
+\end{table}
+
+Tablica~\ref{tbl:accuracy} pokazuje rezultate izvođenja testiranja. Za svako izvođenje model je ponovno treniran, a kako se pri treniranju negativni primjeri uzorkuju rezultati učenja mogu varirati. Prosječna preciznost klasifikatora je 81.4\%. Slika~\ref{fig:accuracy} prikazuje rezultat izvođenja testa.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/accuracy.png}
+	\caption{Rezultat izvođenja detekcije na skupu za testiranje}
+	\label{fig:accuracy}
+\end{figure}
+
 \chapter{Zaključak}
-Zaključak.
+Višedretvenost je vrlo moćan alat koji može višestruko ubrzati izvedbu nekog posla. Kvalitetna i točna višedretvena implementacija se jako dobro skalira s kompleksnijim primjerima. No važno je primijetiti da nije potrebno niti moguće koristiti višedretvenost za svaki problem. Neke probleme nije moguće paralelizirati zbog korištenja istih resursa. Jednostavne poslove nije niti poželjno paralelizirati jer vrijeme potrebno za pokretanje dretvi kao i vrijeme izgubljeno na sinkronizaciju može biti veće nego vrijeme ušteđeno na samoj paralelizaciji posla. \\
+
+Pri izradi višedretvene implementacije nekog algoritma potrebno je prvo razmisliti i analizirati koji dio posla se najduže izvodi te kako je taj posao moguće efikasno paralelizirati. Kod nekih algoritama koji se izvode na velikom skupu podataka možda je bolje ne paralelizirati sam algoritam, već istovremeno izvoditi taj algoritam na više podataka u skupu ako je to moguće.
 
 \bibliography{literatura}
 \bibliographystyle{fer}
 
 \begin{sazetak}
-Sažetak na hrvatskom jeziku.
+Mnogi algoritmi u području računalnog vida kao i u računarstvu općenito izvode slične ili iste operacije na velikom skupu piksela ili podataka. Takvi algoritmi su idealni za višedretvenu izvedbu. U ovom radu ostvarena je višedretvena izvedba algoritma računanja histograma orijentacija gradijenata. Implementirano je i analizirano više opcija paralelizacije te su komentirani rezultati i objašnjeni neki mogući problemi kod implementacija koje daju lošije rezultate. Na kraju je analizirana efektivnost same implementacije treniranjem i testiranjem linearnog klasifikatora opisnicima izračunatim implementiranim algoritmom.
 
-\kljucnerijeci{Ključne riječi, odvojene zarezima.}
+\kljucnerijeci{višedretvenost, računalni vid, detekcija pješaka, paralelizacija, histogram orijentacija gradijenata}
 \end{sazetak}
 
 \engtitle{Multi-threaded Implementation of Algorithm for Calculation of Histogram of Oriented Gradients in Images}
 \begin{abstract}
-Abstract.
+Many algorithms used in computer vision and computing in general perform similar or identical operations on a large amount of pixels or data. Such algorithms are perfect for multithreaded implementation. Main focus of this thesis is multithreaded implementation of algorithm for calculation of histogram of oriented gradients. Multiple parallelization options are implemented and analyzed. Possible problems with less effective implementations are explainde and analyzed. Finally the effectivness of the implementation is analyzed by training and testing a linear classifier using feature vectors calculated using this algorithm.
 
-\keywords{Keywords.}
+\keywords{multithreading, computer vision, pedestrian detection, parallelization, histogram of oriented gradients}
 \end{abstract}
 
 \end{document}
